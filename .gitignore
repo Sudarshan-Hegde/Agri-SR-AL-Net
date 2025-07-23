@@ -1,0 +1,46 @@
+# Python virtual environment and packages
+majProj/lib/
+majProj/lib64/
+majProj/bin/
+majProj/include/
+majProj/share/
+majProj/pyvenv.cfg
+*.so
+site-packages/
+
+# Dataset and output directories
+majProj/data/sr_hr/
+majProj/data/sr_lr/
+majProj/data/sr_out/
+**/data/sr_hr/
+**/data/sr_lr/
+**/data/sr_out/
+
+# Model files and checkpoints
+*.h5
+*.so
+*.pth
+*.ckpt
+*.pkl
+*.bin
+*.onnx
+**/models/*.h5
+**/models/*.so
+**/models/*.pth
+
+# Python cache and environment
+__pycache__/
+*.py[cod]
+*.pyc
+.Python
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# System files
+.DS_Store
+Thumbs.db
