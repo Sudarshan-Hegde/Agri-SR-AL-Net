@@ -1,0 +1,36 @@
+# Python virtual environment and packages
+majProj/lib/
+majProj/lib64/
+majProj/bin/
+majProj/include/
+majProj/share/
+majProj/pyvenv.cfg
+*.so
+site-packages/
+__pycache__/
+*.py[cod]
+*.h5
+*.pth
+*.ckpt
+*.pkl
+*.bin
+*.onnx
+
+# Dataset and output directories
+majProj/data/sr_hr/
+majProj/data/sr_lr/
+majProj/data/sr_out/
+**/data/sr_hr/
+**/data/sr_lr/
+**/data/sr_out/
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# System files
+.DS_Store
+Thumbs.db
