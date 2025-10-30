@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geo-Agri Analyst - Simple Test</title>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        #map { height: 500px; width: 100%; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <header class="bg-white shadow-lg rounded-lg p-6 mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">Geo-Agri Analyst</h1>
+            <p class="text-gray-600">AI-powered agricultural land classification</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Map Section -->
+            <div class="bg-white rounded-lg shadow-lg p-4">
+                <h2 class="text-xl font-semibold mb-4">Interactive Map</h2>
+                <div id="map"></div>
+                <button id="analyzeBtn" class="mt-4 px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:bg-gray-400" disabled>
+                    Analyze Selected Area
+                </button>
+            </div>
+
+            <!-- Results Section -->
+            <div class="bg-white rounded-lg shadow-lg p-4">
+                <h2 class="text-xl font-semibold mb-4">Analysis Results</h2>
+                <div id="results">
+                    <p class="text-gray-500">Click on the map to select a location for analysis.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize map
+        const map = L.map('map').setView([40.7128, -74.0060], 10);
+        
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let currentMarker = null;
+        let selectedLocation = null;
+
+        // Handle map clicks
+        map.on('click', function(e) {
+            selectedLocation = [e.latlng.lat, e.latlng.lng];
+            
+            // Remove existing marker
+            if (currentMarker) {
+                map.removeLayer(currentMarker);
+            }
+            
+            // Add new marker
+            currentMarker = L.marker([e.latlng.lat, e.latlng.lng])
+                .addTo(map)
+                .bindPopup(`Selected: ${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`)
+                .openPopup();
+            
+            // Enable analyze button
+            document.getElementById('analyzeBtn').disabled = false;
+            
+            console.log('Selected location:', e.latlng.lat, e.latlng.lng);
+        });
+
+        // Handle analyze button click
+        document.getElementById('analyzeBtn').addEventListener('click', async function() {
+            if (!selectedLocation) return;
+            
+            const resultsDiv = document.getElementById('results');
+            const btn = this;
+            
+            btn.disabled = true;
+            btn.textContent = 'Analyzing...';
+            
+            // Show loading
+            resultsDiv.innerHTML = `
+                <div class="flex items-center space-x-2 mb-4">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-green-500"></div>
+                    <span>Processing satellite imagery...</span>
+                </div>
+                <div class="space-y-2 text-sm text-gray-600">
+                    <div>• Fetching live satellite imagery...</div>
+                    <div>• Preprocessing satellite data...</div>
+                    <div>• Enhancing image quality with AI...</div>
+                    <div>• Running land classification model...</div>
+                    <div>• Generating final analysis...</div>
+                </div>
+            `;
+
+            try {
+                // Make API call
+                const response = await fetch('http://localhost:8000/api/v1/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        lat: selectedLocation[0],
+                        lng: selectedLocation[1]
+                    })
+                });
+
+                const data = await response.json();
+                
+                // Show results
+                resultsDiv.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <h3 class="text-lg font-semibold text-green-900">Land Class: ${data.land_class}</h3>
+                            <p class="text-green-700">Confidence: ${Math.round(data.confidence * 100)}%</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="text-center">
+                                <h4 class="font-medium mb-2">Before (16x16)</h4>
+                                <img src="data:image/png;base64,${data.before_image_b64}" 
+                                     class="w-full h-24 object-cover border rounded" 
+                                     style="image-rendering: pixelated;">
+                            </div>
+                            <div class="text-center">
+                                <h4 class="font-medium mb-2">After (64x64)</h4>
+                                <img src="data:image/png;base64,${data.after_image_b64}" 
+                                     class="w-full h-24 object-cover border rounded">
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                            <h4 class="font-medium text-gray-900 mb-2">Future Features</h4>
+                            <p class="text-sm text-gray-600">• Historical crop analysis is in development.</p>
+                            <p class="text-sm text-gray-600">• Soil and weather analysis for recommendations is in development.</p>
+                        </div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Analysis failed:', error);
+                resultsDiv.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <p class="text-red-700">Analysis failed. Make sure the backend server is running on port 8000.</p>
+                    </div>
+                `;
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Analyze Selected Area';
+        });
+    </script>
+</body>
+</html>

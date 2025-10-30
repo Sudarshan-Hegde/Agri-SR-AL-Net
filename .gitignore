@@ -1,36 +1,149 @@
-# Python virtual environment and packages
-majProj/lib/
-majProj/lib64/
-majProj/bin/
-majProj/include/
-majProj/share/
-majProj/pyvenv.cfg
-*.so
-site-packages/
+# Python
 __pycache__/
 *.py[cod]
-*.h5
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+majProj/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.env
+.venv
+
+# PyTorch models and data
 *.pth
-*.ckpt
+*.pt
 *.pkl
+*.ckpt
+*.h5
 *.bin
 *.onnx
 
 # Dataset and output directories
-majProj/data/sr_hr/
-majProj/data/sr_lr/
-majProj/data/sr_out/
-**/data/sr_hr/
-**/data/sr_lr/
-**/data/sr_out/
+majProj/data/
+data/
+datasets/
+**/data/
+outputs/
+results/
+logs/
+wandb/
 
-# Environment
-.env
-.venv
-env/
-venv/
-ENV/
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
 
-# System files
+# Research and documentation (not code)
+*.pdf
+*.docx
+*.doc
+*.pptx
+*.ppt
+researchPaper.*
+research/
+papers/
+(base-paper)*
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+package-lock.json
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# dotenv environment variable files
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# Vite
+dist-ssr
+*.local
+dist/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+
+# Kaggle
+kaggle.json
+kernel-metadata.json
+
+# Model weights (too large for git)
+model_weights/
+**/model_weights/
+
+# Logs
+*.log
+
+# Cache directories
+.cache/
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
