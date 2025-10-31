@@ -1,4 +1,4 @@
-/* Custom styles for leaflet map */
+/* Import leaflet CSS before Tailwind to avoid conflicts */
 @import 'leaflet/dist/leaflet.css';
 
 @tailwind base;
@@ -6,16 +6,90 @@
 @tailwind utilities;
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+  
+  /* Deep black theme colors */
+  --bg-primary: #000000;     /* Pure black */
+  --bg-secondary: #0a0a0a;   /* Very dark gray */
+  --bg-card: rgba(10, 10, 10, 0.8);     /* Very dark with opacity */
+  --bg-glass: rgba(20, 20, 20, 0.05);   /* Dark glass effect */
+  --text-primary: #ffffff;   /* Pure white */
+  --text-secondary: #a1a1aa; /* Light gray */
+  --accent-blue: #3b82f6;    /* blue-500 */
+  --accent-green: #10b981;   /* emerald-500 */
+  --accent-indigo: #6366f1;  /* indigo-500 */
+  --border-color: rgba(255, 255, 255, 0.05); /* Very subtle white border */
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  background: var(--bg-primary);
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(20, 20, 20, 0.5) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(10, 10, 10, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(5, 5, 5, 0.2) 0%, transparent 70%);
+  color: var(--text-primary);
+  overflow-x: hidden;
+}
+
+/* Glass morphism utilities - Dark Black Theme */
+.glass {
+  background: rgba(10, 10, 10, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-card {
+  background: rgba(5, 5, 5, 0.8);
+  backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.glass-button {
+  background: rgba(20, 20, 20, 0.7);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.glass-button:hover {
+  background: rgba(30, 30, 30, 0.8);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Glowing effects for dark blue theme */
+.glow-blue {
+  box-shadow: 
+    0 0 20px rgba(59, 130, 246, 0.4),
+    0 0 40px rgba(59, 130, 246, 0.2),
+    0 0 60px rgba(59, 130, 246, 0.1);
+}
+
+.glow-green {
+  box-shadow: 
+    0 0 20px rgba(16, 185, 129, 0.4),
+    0 0 40px rgba(16, 185, 129, 0.2);
+}
+
+.glow-red {
+  box-shadow: 
+    0 0 20px rgba(239, 68, 68, 0.4),
+    0 0 40px rgba(239, 68, 68, 0.2);
+}
+
+.glow-indigo {
+  box-shadow: 
+    0 0 20px rgba(99, 102, 241, 0.4),
+    0 0 40px rgba(99, 102, 241, 0.2);
 }
 
 /* Loading spinner animation */
@@ -29,26 +103,89 @@ body {
   animation: spin 1s linear infinite;
 }
 
+/* Floating animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Pulse glow animation */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 
+      0 0 20px rgba(59, 130, 246, 0.3),
+      0 0 40px rgba(59, 130, 246, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 30px rgba(59, 130, 246, 0.5),
+      0 0 60px rgba(59, 130, 246, 0.2);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
 /* Custom scrollbar */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 #f8fafc;
+  scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: #f8fafc;
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  transition: background 0.3s;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Map container dark theme */
+.leaflet-container {
+  background: #1a1a1a !important;
+  border-radius: 16px;
+}
+
+/* Leaflet popup dark black theme */
+.leaflet-popup-content-wrapper {
+  background: rgba(0, 0, 0, 0.95) !important;
+  backdrop-filter: blur(20px);
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+}
+
+.leaflet-popup-tip {
+  background: rgba(0, 0, 0, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Gradient text for dark black theme */
+.gradient-text {
+  background: linear-gradient(135deg, #60a5fa, #34d399, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: brightness(1.2);
 }

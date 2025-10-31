@@ -1,247 +1,226 @@
-import React from 'react'
+import { useState, useEffect } from 'react'
 
-function LoadingSpinner() {
-  return (
-    <div className="flex items-center justify-center space-x-2">
-      <div className="w-4 h-4 border-2 border-agri-green border-t-transparent rounded-full animate-spin"></div>
-    </div>
-  )
-}
-
-function ProcessingSteps({ currentStep }) {
+function ResultsPanel({ isLoading, error, data }) {
+  const [currentStep, setCurrentStep] = useState(0)
+  
   const steps = [
-    'Fetching live satellite imagery...',
-    'Preprocessing satellite data...',
-    'Enhancing image quality with AI...',
-    'Running land classification model...',
-    'Generating final analysis...'
+    "Fetching satellite imagery...",
+    "Enhancing image quality...", 
+    "Analyzing land classification..."
   ]
 
-  return (
-    <div className="space-y-3">
-      {steps.map((step, index) => (
-        <div key={index} className="flex items-center space-x-3">
-          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-            index < currentStep 
-              ? 'bg-green-500 text-white' 
-              : index === currentStep 
-                ? 'bg-agri-blue text-white' 
-                : 'bg-gray-200 text-gray-500'
-          }`}>
-            {index < currentStep ? '✓' : index + 1}
-          </div>
-          <span className={`text-sm ${
-            index <= currentStep ? 'text-gray-900 font-medium' : 'text-gray-500'
-          }`}>
-            {step}
-          </span>
-          {index === currentStep && <LoadingSpinner />}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function ConfidenceBar({ confidence }) {
-  const percentage = Math.round(confidence * 100)
-  const getColorClass = (conf) => {
-    if (conf >= 0.8) return 'bg-green-500'
-    if (conf >= 0.6) return 'bg-yellow-500'
-    return 'bg-red-500'
-  }
-
-  return (
-    <div className="w-full">
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-sm font-medium text-gray-700">Confidence</span>
-        <span className="text-sm font-bold text-gray-900">{percentage}%</span>
-      </div>
-      <div className="w-full bg-gray-200 rounded-full h-3">
-        <div 
-          className={`h-3 rounded-full transition-all duration-500 ${getColorClass(confidence)}`}
-          style={{ width: `${percentage}%` }}
-        ></div>
-      </div>
-    </div>
-  )
-}
-
-function ImageComparison({ beforeImage, afterImage }) {
-  return (
-    <div className="space-y-4">
-      <h4 className="font-semibold text-gray-900 text-center">Image Enhancement</h4>
+  // Show step-by-step loading messages
+  useEffect(() => {
+    if (isLoading) {
+      setCurrentStep(0)
+      const interval = setInterval(() => {
+        setCurrentStep(prev => {
+          if (prev < steps.length - 1) {
+            return prev + 1
+          }
+          return 0 // Loop back to start
+        })
+      }, 800)
       
-      <div className="grid grid-cols-2 gap-4">
-        {/* Before Image */}
-        <div className="text-center">
-          <h5 className="text-sm font-medium text-gray-700 mb-2">Before (16x16)</h5>
-          <div className="border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-            <img
-              src={`data:image/png;base64,${beforeImage}`}
-              alt="Low Resolution"
-              className="w-full h-32 object-cover"
-              style={{ imageRendering: 'pixelated' }}
-            />
-          </div>
-          <p className="text-xs text-gray-500 mt-1">Original satellite image</p>
-        </div>
+      return () => clearInterval(interval)
+    }
+  }, [isLoading])
 
-        {/* After Image */}
-        <div className="text-center">
-          <h5 className="text-sm font-medium text-gray-700 mb-2">After (64x64)</h5>
-          <div className="border-2 border-agri-green rounded-lg overflow-hidden bg-gray-50">
-            <img
-              src={`data:image/png;base64,${afterImage}`}
-              alt="Super Resolution"
-              className="w-full h-32 object-cover"
-            />
-          </div>
-          <p className="text-xs text-agri-green font-medium mt-1">AI Enhanced (4x)</p>
-        </div>
-      </div>
-
-      {/* Enhancement info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-        <div className="flex items-center space-x-2">
-          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span className="text-sm text-blue-800 font-medium">Super-Resolution Enhancement</span>
-        </div>
-        <p className="text-xs text-blue-700 mt-1">
-          Our AI model enhanced the image resolution by 4x for better classification accuracy.
-        </p>
-      </div>
-    </div>
-  )
-}
-
-function FutureFeatures() {
-  return (
-    <div className="space-y-4">
-      <h4 className="font-semibold text-gray-900">Future Features</h4>
-      
-      {/* Crop History */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <div className="flex items-center space-x-2 mb-2">
-          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <h5 className="font-medium text-gray-900">Crop History Analysis</h5>
-        </div>
-        <p className="text-sm text-gray-600">
-          Historical crop analysis and seasonal patterns are in development. 
-          This will provide insights into land use changes over time.
-        </p>
-      </div>
-
-      {/* Crop Recommendations */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <div className="flex items-center space-x-2 mb-2">
-          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-          </svg>
-          <h5 className="font-medium text-gray-900">Crop Recommendations</h5>
-        </div>
-        <p className="text-sm text-gray-600">
-          Soil and weather analysis for personalized crop recommendations is in development.
-          This will help optimize agricultural productivity.
-        </p>
-      </div>
-    </div>
-  )
-}
-
-function ResultsPanel({ isLoading, error, predictionData, currentStep, selectedPos }) {
-  // No location selected
-  if (!selectedPos && !isLoading && !predictionData && !error) {
+  // Loading state
+  if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="text-center text-gray-500">
-          <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <h3 className="text-lg font-medium mb-2">Select a Location</h3>
-          <p className="text-sm">
-            Click anywhere on the map to start analyzing satellite imagery for agricultural land classification.
-          </p>
+      <div className="space-y-6">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 relative">
+            <div className="absolute inset-0 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="absolute inset-2 border-2 border-emerald-500 border-b-transparent rounded-full animate-spin" style={{animationDirection: 'reverse'}}></div>
+          </div>
+          <p className="text-white font-semibold text-lg mb-2">Processing Analysis</p>
+          <p className="text-blue-400 font-medium animate-pulse">{steps[currentStep]}</p>
+        </div>
+        
+        <div className="glass rounded-xl p-4">
+          <div className="space-y-3">
+            {steps.map((step, index) => (
+              <div key={index} className="flex items-center space-x-3">
+                <div className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                  index < currentStep 
+                    ? 'bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.5)]'
+                    : index === currentStep 
+                      ? 'bg-blue-400 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.5)]'
+                      : 'bg-gray-600'
+                }`}></div>
+                <span className={`text-sm transition-colors duration-300 ${
+                  index <= currentStep ? 'text-white' : 'text-gray-500'
+                }`}>
+                  {step}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <div className="glass rounded-xl p-4 border border-blue-500/30">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-sm">⏳</span>
+            </div>
+            <div>
+              <p className="text-white font-medium text-sm">Please wait</p>
+              <p className="text-gray-300 text-xs">Processing satellite imagery with AI...</p>
+            </div>
+          </div>
         </div>
       </div>
     )
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Loading State */}
-      {isLoading && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <LoadingSpinner />
-            <span className="ml-2">Processing Analysis</span>
-          </h3>
-          <ProcessingSteps currentStep={currentStep} />
-        </div>
-      )}
-
-      {/* Error State */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <div className="flex items-center space-x-2 mb-2">
-            <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <h3 className="text-lg font-semibold text-red-900">Analysis Failed</h3>
+  // Error state  
+  if (error) {
+    return (
+      <div className="glass rounded-xl p-6 border border-red-500/30 glow-red">
+        <div className="flex items-start space-x-4">
+          <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-lg">❌</span>
           </div>
-          <p className="text-sm text-red-700">{error}</p>
+          <div>
+            <h3 className="text-red-400 font-semibold mb-2">Analysis Failed</h3>
+            <p className="text-gray-300 text-sm leading-relaxed">{error}</p>
+          </div>
         </div>
-      )}
+      </div>
+    )
+  }
 
-      {/* Results */}
-      {predictionData && (
-        <div className="space-y-6">
-          {/* Main Result */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <div className="text-center mb-4">
-              <div className="w-16 h-16 bg-agri-green rounded-full flex items-center justify-center mx-auto mb-3">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-1">
-                {predictionData.land_class}
-              </h3>
-              <p className="text-gray-600">Land Classification Result</p>
+  // Results state
+  if (data) {
+    return (
+      <div className="space-y-6">
+        {/* Land Classification Results */}
+        <div className="glass rounded-xl p-6 border border-emerald-500/30 glow-green">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-lg">🌱</span>
+            </div>
+            <h3 className="text-emerald-400 font-bold text-lg">Land Classification</h3>
+          </div>
+          
+          <div className="space-y-3">
+            <div className="glass rounded-lg p-3">
+              <p className="text-gray-300 text-sm">Land Type</p>
+              <p className="text-white font-bold text-lg">{data.land_class}</p>
             </div>
             
-            <ConfidenceBar confidence={predictionData.confidence} />
-          </div>
-
-          {/* Image Comparison */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <ImageComparison 
-              beforeImage={predictionData.before_image_b64}
-              afterImage={predictionData.after_image_b64}
-            />
-          </div>
-
-          {/* Future Features */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <FutureFeatures />
-          </div>
-        </div>
-      )}
-
-      {/* Location Info */}
-      {selectedPos && (
-        <div className="bg-white rounded-lg shadow-lg p-4">
-          <h4 className="font-medium text-gray-900 mb-2">Selected Coordinates</h4>
-          <div className="text-sm text-gray-600 space-y-1">
-            <p>Latitude: {selectedPos[0].toFixed(6)}</p>
-            <p>Longitude: {selectedPos[1].toFixed(6)}</p>
+            <div className="glass rounded-lg p-3">
+              <p className="text-gray-300 text-sm mb-2">Confidence Level</p>
+              <div className="flex items-center space-x-3">
+                <div className="flex-1 bg-gray-700 rounded-full h-2 overflow-hidden">
+                  <div 
+                    className="bg-gradient-to-r from-emerald-500 to-green-400 h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                    style={{ width: `${data.confidence * 100}%` }}
+                  ></div>
+                </div>
+                <span className="text-emerald-400 font-bold text-lg">
+                  {Math.round(data.confidence * 100)}%
+                </span>
+              </div>
+            </div>
           </div>
         </div>
-      )}
+
+        {/* Before/After Images */}
+        <div className="glass rounded-xl p-6 border border-blue-500/30 glow-blue">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-lg">🖼️</span>
+            </div>
+            <h3 className="text-blue-400 font-bold text-lg">Image Enhancement</h3>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="glass rounded-lg p-4 text-center">
+              <p className="text-gray-300 text-sm font-medium mb-3">Before (Low-Res)</p>
+              <div className="w-16 h-16 mx-auto mb-3 rounded-lg overflow-hidden border border-gray-600">
+                <img 
+                  src={`data:image/png;base64,${data.before_image_b64}`}
+                  alt="Before enhancement"
+                  className="w-full h-full object-cover"
+                  style={{ imageRendering: 'pixelated' }}
+                />
+              </div>
+              <p className="text-xs text-gray-400">Original satellite</p>
+            </div>
+            
+            <div className="glass rounded-lg p-4 text-center">
+              <p className="text-gray-300 text-sm font-medium mb-3">After (Enhanced)</p>
+              <div className="w-16 h-16 mx-auto mb-3 rounded-lg overflow-hidden border border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                <img 
+                  src={`data:image/png;base64,${data.after_image_b64}`}
+                  alt="After enhancement"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <p className="text-xs text-emerald-400">AI Enhanced</p>
+            </div>
+          </div>
+          
+          <div className="mt-4 glass rounded-lg p-3">
+            <div className="flex items-center space-x-2 text-sm text-gray-300">
+              <span className="text-blue-400">✨</span>
+              <span>Super-resolution enhancement applied using advanced AI models</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Future Features */}
+        <div className="space-y-4">
+          <div className="glass rounded-xl p-4 border border-gray-600/30">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm">📊</span>
+                </div>
+                <h4 className="text-gray-300 font-semibold">Crop History Analysis</h4>
+              </div>
+              <span className="glass px-2 py-1 rounded-full text-xs text-gray-400">Coming Soon</span>
+            </div>
+            <p className="text-gray-400 text-sm">
+              Historical patterns and seasonal crop rotation analysis
+            </p>
+          </div>
+          
+          <div className="glass rounded-xl p-4 border border-gray-600/30">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm">🌾</span>
+                </div>
+                <h4 className="text-gray-300 font-semibold">Smart Recommendations</h4>
+              </div>
+              <span className="glass px-2 py-1 rounded-full text-xs text-gray-400">Coming Soon</span>
+            </div>
+            <p className="text-gray-400 text-sm">
+              AI-powered crop suggestions based on soil and climate data
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Default state (no location selected)
+  return (
+    <div className="text-center py-12">
+      <div className="w-20 h-20 mx-auto mb-6 glass rounded-full flex items-center justify-center animate-float">
+        <span className="text-4xl">📍</span>
+      </div>
+      <h3 className="text-white font-semibold text-lg mb-2">Ready for Analysis</h3>
+      <p className="text-gray-400 text-sm leading-relaxed">
+        Select any location on the interactive map to begin AI-powered satellite imagery analysis
+      </p>
+      <div className="mt-6 glass rounded-lg p-3 inline-block">
+        <p className="text-xs text-gray-400">Click anywhere on the map to get started</p>
+      </div>
     </div>
   )
 }

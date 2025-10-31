@@ -1,74 +1,85 @@
-# Geo-Agri Analyst
+# 🌍 Geo-Agri Analyst
 
-AI-powered agricultural land classification using satellite imagery, super-resolution enhancement, and deep learning.
+AI-powered agricultural land classification using satellite imagery and deep learning. This application allows users to click on a map, analyze satellite imagery, and get land use classifications with super-resolution image enhancement.
 
-## 🌟 Features
+## 🚀 Features
 
-- **Interactive Map Interface**: Click anywhere on the map to select locations for analysis
-- **AI-Powered Classification**: Deep learning models classify land use into 10 categories
-- **Super-Resolution Enhancement**: 4x image enhancement using RFB-ESRGAN architecture  
-- **Real-time Processing**: Live satellite imagery analysis with step-by-step feedback
-- **Modern UI**: Beautiful, responsive interface built with React and Tailwind CSS
+- **Interactive Map**: Click anywhere to select a location for analysis
+- **Satellite Imagery Analysis**: Fetches live satellite data for the selected coordinates  
+- **AI-Powered Classification**: 2-stage PyTorch model pipeline:
+  1. **Super-Resolution**: Enhances image quality from 30x30 to 120x120 pixels (4x upscaling)
+  2. **Land Classification**: Classifies land use into 10 categories (Arable Land, Forest, Grassland, etc.)
+- **Real-time Results**: View before/after images and classification confidence
+- **Modern UI**: Built with React, Tailwind CSS, and Leaflet maps
 
-## 🏗️ Tech Stack
+## 🛠️ Tech Stack
 
 ### Backend
 - **FastAPI** - Modern Python web framework
-- **PyTorch** - Deep learning models
+- **PyTorch** - Deep learning models for super-resolution and classification
 - **Uvicorn** - ASGI server
 
 ### Frontend  
-- **React** - UI framework
-- **Vite** - Build tool
-- **React Leaflet** - Interactive maps
-- **Tailwind CSS** - Styling
-- **Axios** - HTTP client
+- **React** - User interface framework
+- **Vite** - Build tool and dev server
+- **React-Leaflet** - Interactive maps
+- **Tailwind CSS** - Utility-first styling
+- **Axios** - HTTP client for API calls
 
-### Models
-- **SR Model**: RFBESRGANGenerator for 4x super-resolution (16x16 → 64x64)
-- **Classification Model**: RobustClassifier for land use classification (10 classes)
+## 📋 Prerequisites
 
-## 🚀 Quick Start
+Before running this project, make sure you have:
 
-### Prerequisites
-- Python 3.8+
-- Node.js 16+
-- npm or yarn
+- **Python 3.8+** installed
+- **Node.js 16+** and **npm** installed
+- **Git** (for cloning the repository)
 
-### Backend Setup
+## 🚀 How to Run (Development Mode)
+
+### 1. Run the Backend (FastAPI)
 
 1. **Navigate to backend directory:**
    ```bash
    cd backend
    ```
 
-2. **Install dependencies:**
+2. **Create a Python virtual environment:**
+   ```bash
+   python -m venv venv
+   ```
+
+3. **Activate the virtual environment:**
+   
+   **On Linux/macOS:**
+   ```bash
+   source venv/bin/activate
+   ```
+   
+   **On Windows:**
+   ```bash
+   venv\Scripts\activate
+   ```
+
+4. **Install Python dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Add your trained model weights:**
-   ```
-   backend/model_weights/
-   ├── sr_model_final.pth      # Your trained super-resolution model
-   └── clf_model_final.pth     # Your trained classification model
-   ```
-
-4. **Start the FastAPI server:**
+5. **Start the FastAPI server:**
    ```bash
-   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+   uvicorn app.main:app --reload
    ```
 
-   The API will be available at `http://localhost:8000`
+   ✅ **Backend server is now running on http://localhost:8000**
 
-### Frontend Setup
+### 2. Run the Frontend (React)
 
-1. **Navigate to frontend directory:**
+1. **Open a new terminal and navigate to frontend directory:**
    ```bash
    cd frontend
    ```
 
-2. **Install dependencies:**
+2. **Install Node.js dependencies:**
    ```bash
    npm install
    ```
@@ -78,7 +89,26 @@ AI-powered agricultural land classification using satellite imagery, super-resol
    npm run dev
    ```
 
-   The app will be available at `http://localhost:5173`
+   ✅ **Frontend app is now running on http://localhost:5173**
+
+## 🎯 How to Use
+
+1. **Open your browser** and go to `http://localhost:5173`
+
+2. **Click anywhere on the map** to drop a pin and select a location
+
+3. **Click the "Analyze this Area" button** to start the analysis
+
+4. **Wait for processing** - you'll see step-by-step status updates:
+   - Fetching live satellite imagery...
+   - Enhancing image quality...
+   - Analyzing land class...
+
+5. **View results** including:
+   - Land classification (e.g., "Arable Land", "Forest", etc.)
+   - Confidence score
+   - Before/After images showing super-resolution enhancement
+   - Placeholder sections for future features
 
 ## 📁 Project Structure
 
@@ -87,135 +117,84 @@ geo-agri-analyst/
 ├── backend/
 │   ├── app/
 │   │   ├── __init__.py
-│   │   ├── main.py              # FastAPI application
-│   │   ├── models.py            # PyTorch model definitions
-│   │   └── ml_service.py        # ML pipeline service
-│   ├── model_weights/           # Trained model files
-│   └── requirements.txt
+│   │   ├── main.py              # FastAPI app with fake backend
+│   │   └── models.py            # Placeholder PyTorch models
+│   └── requirements.txt         # Python dependencies
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── MapComponent.jsx     # Interactive map
-│   │   │   └── ResultsPanel.jsx     # Results display
-│   │   ├── App.jsx              # Main application
-│   │   ├── main.jsx             # Entry point
-│   │   └── index.css            # Global styles
-│   ├── package.json
-│   ├── vite.config.js
-│   └── tailwind.config.js
-└── README.md
+│   │   │   ├── MapComponent.jsx # Interactive Leaflet map
+│   │   │   └── ResultsPanel.jsx # Results display component
+│   │   ├── App.jsx              # Main React component
+│   │   ├── index.css            # Tailwind CSS setup
+│   │   └── main.jsx             # React entry point
+│   ├── package.json             # Node.js dependencies
+│   ├── tailwind.config.js       # Tailwind configuration
+│   ├── postcss.config.js        # PostCSS configuration
+│   └── vite.config.js           # Vite configuration
+└── README.md                    # This file
 ```
 
-## 🔧 API Endpoints
+## 🔧 Development Notes
 
-### Health Check
-```
-GET /
-GET /api/v1/health
-```
+### Current Status: Fake Backend Mode
 
-### Analysis
-```
-POST /api/v1/analyze
-```
-**Request Body:**
-```json
-{
-  "lat": 40.7128,
-  "lng": -74.0060
-}
-```
+This version uses a **fake backend** that:
+- Accepts coordinates from the frontend
+- Simulates processing time with `time.sleep(2.5)`
+- Returns hard-coded mock data for development
+- Uses tiny 1x1 pixel placeholder images
 
-**Response:**
-```json
-{
-  "land_class": "Arable Land",
-  "confidence": 0.92,
-  "before_image_b64": "base64_encoded_lr_image",
-  "after_image_b64": "base64_encoded_sr_image",
-  "processing_steps": ["step1", "step2", ...]
-}
-```
+### Future Development
 
-### Land Classes
-```
-GET /api/v1/classes
-```
+The application is designed to easily transition to a real backend that will:
+- Fetch actual satellite imagery from APIs (e.g., Sentinel Hub)
+- Load trained PyTorch models for super-resolution and classification
+- Process real satellite data through the ML pipeline
+- Return actual enhanced images and classification results
 
-## 🎯 Land Use Classes
+### API Endpoints
 
-The model classifies land into 10 categories:
+- `GET /` - Health check
+- `GET /health` - Detailed health status  
+- `POST /api/v1/analyze` - Analyze coordinates (accepts `{lat: float, lng: float}`)
 
-1. **Arable Land** - Cropland and agricultural fields
-2. **Forest** - Wooded areas and tree coverage
-3. **Grassland** - Natural grasslands and meadows
-4. **Urban Area** - Cities, towns, and built-up areas
-5. **Water Body** - Rivers, lakes, and water features
-6. **Wetland** - Swamps, marshes, and wetland areas
-7. **Barren Land** - Desert, rock, and bare soil
-8. **Permanent Crops** - Orchards and permanent cultivation
-9. **Pasture** - Livestock grazing areas
-10. **Industrial Area** - Factories and industrial zones
+## 🐛 Troubleshooting
 
-## 🔮 Future Features (In Development)
+### Backend Issues
 
-- **Crop History Analysis**: Historical crop patterns and seasonal changes
-- **Crop Recommendations**: Soil and weather-based crop suggestions
-- **Real Sentinel Hub Integration**: Live satellite imagery from ESA Sentinel satellites
-- **Multi-temporal Analysis**: Time-series land use change detection
+**"Module not found" errors:**
+- Make sure you're in the virtual environment: `source venv/bin/activate`
+- Reinstall dependencies: `pip install -r requirements.txt`
 
-## 🛠️ Development
+**Port 8000 already in use:**
+- Change the port: `uvicorn app.main:app --reload --port 8001`
+- Update the frontend API URL in `App.jsx` accordingly
 
-### Adding Your Trained Models
+### Frontend Issues
 
-1. Replace the placeholder model classes in `backend/app/models.py` with your actual `RFBESRGANGenerator` and `RobustClassifier` implementations
+**Dependencies installation fails:**
+- Delete `node_modules` and `package-lock.json`
+- Run `npm install` again
+- Try using `npm install --legacy-peer-deps` for React compatibility
 
-2. Place your trained model weights in `backend/model_weights/`:
-   - `sr_model_final.pth` - Your super-resolution model
-   - `clf_model_final.pth` - Your classification model
+**Map not loading:**
+- Check browser console for errors
+- Ensure Leaflet CSS is imported correctly
+- Verify internet connection for map tiles
 
-3. Update the class names in `CLF_Model.class_names` if different from the defaults
+## 📄 License
 
-### Customization
-
-- **Map Center**: Change `defaultCenter` in `MapComponent.jsx`
-- **Styling**: Modify colors in `tailwind.config.js`
-- **Processing Steps**: Update steps in `main.py` and `ResultsPanel.jsx`
-
-## 📊 Model Requirements
-
-### Super-Resolution Model
-- **Input**: (B, 3, 16, 16) tensors
-- **Output**: (B, 3, 64, 64) tensors  
-- **Architecture**: RFB-ESRGAN based
-- **Upscaling Factor**: 4x
-
-### Classification Model  
-- **Input**: (B, 3, 64, 64) tensors
-- **Output**: (B, 10) logits
-- **Architecture**: ResNet-like with SE blocks
-- **Classes**: 10 land use categories
+This project is for educational and research purposes.
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
+4. Test thoroughly
 5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 🙏 Acknowledgments
-
-- **PyTorch** team for the deep learning framework
-- **FastAPI** for the excellent web framework
-- **React Leaflet** for map components
-- **OpenStreetMap** for map tiles
-- **Tailwind CSS** for styling utilities
 
 ---
 
-**Built with ❤️ for sustainable agriculture and AI-powered environmental monitoring**
+**Happy Analyzing! 🌱🛰️**
