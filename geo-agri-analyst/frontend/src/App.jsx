@@ -92,7 +92,7 @@ function App() {
               {/* Status Indicator */}
               <div className="hidden md:flex items-center space-x-2 glass px-2 py-1 lg:px-3 lg:py-2 rounded-lg">
                 <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
-                <span className="text-xs text-gray-300">AI Ready</span>
+                <span className="text-xs text-gray-300">Built by Sudarshan Hegde</span>
               </div>
               
               {/* Mobile Menu Button */}
