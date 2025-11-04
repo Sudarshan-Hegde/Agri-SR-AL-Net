@@ -11,9 +11,14 @@ function App() {
   const [selectedPos, setSelectedPos] = useState(null)
 
   // Handle analysis request
-  const handleAnalyze = async () => {
-    if (!selectedPos) {
-      setError('Please select a location on the map first')
+  const handleAnalyze = async (analysisData) => {
+    // Check if we have valid selection data
+    const hasValidSelection = analysisData && 
+      ((analysisData.type === 'point' && analysisData.position) ||
+       (analysisData.type === 'polygon' && analysisData.points && analysisData.points.length >= 3));
+
+    if (!hasValidSelection) {
+      setError('Please select a location or create a polygon on the map first')
       return
     }
 
@@ -22,10 +27,27 @@ function App() {
     setPredictionData(null)
 
     try {
-      const response = await axios.post('http://localhost:8000/api/v1/analyze', {
-        lat: selectedPos.lat,
-        lng: selectedPos.lng
-      })
+      let requestData;
+      
+      if (analysisData.type === 'polygon') {
+        // Send polygon data
+        requestData = {
+          type: 'polygon',
+          points: analysisData.points,
+          // Calculate centroid for API compatibility
+          lat: analysisData.points.reduce((sum, point) => sum + point[0], 0) / analysisData.points.length,
+          lng: analysisData.points.reduce((sum, point) => sum + point[1], 0) / analysisData.points.length
+        }
+      } else {
+        // Send single point data
+        requestData = {
+          type: 'point',
+          lat: analysisData.position.lat,
+          lng: analysisData.position.lng
+        }
+      }
+
+      const response = await axios.post('http://localhost:8000/api/v1/analyze', requestData)
       
       setPredictionData(response.data)
     } catch (err) {

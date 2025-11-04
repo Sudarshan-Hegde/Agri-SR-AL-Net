@@ -94,8 +94,59 @@ function ResultsPanel({ isLoading, error, data }) {
 
   // Results state
   if (data) {
+    const isPolygonAnalysis = data.analysis_type === 'polygon';
+    
     return (
       <div className="space-y-6">
+        {/* Analysis Type Indicator */}
+        <div className="glass rounded-xl p-4 border border-purple-500/30 glow-indigo">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-lg">{isPolygonAnalysis ? '🔷' : '📍'}</span>
+            </div>
+            <div>
+              <h3 className="text-purple-400 font-bold text-sm">Analysis Type</h3>
+              <p className="text-white font-medium">
+                {isPolygonAnalysis ? 'Polygon Area Analysis' : 'Point Location Analysis'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Polygon Area Information */}
+        {isPolygonAnalysis && data.area_info && (
+          <div className="glass rounded-xl p-6 border border-emerald-500/30 glow-green">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-lg">📐</span>
+              </div>
+              <h3 className="text-emerald-400 font-bold text-lg">Area Information</h3>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div className="glass rounded-lg p-3">
+                <p className="text-gray-300 text-xs">Points</p>
+                <p className="text-white font-bold text-lg">{data.area_info.total_points}</p>
+              </div>
+              
+              <div className="glass rounded-lg p-3">
+                <p className="text-gray-300 text-xs">Est. Area</p>
+                <p className="text-white font-bold text-lg">{data.area_info.estimated_area_hectares} ha</p>
+              </div>
+              
+              <div className="glass rounded-lg p-3">
+                <p className="text-gray-300 text-xs">Perimeter</p>
+                <p className="text-white font-bold text-lg">{data.area_info.perimeter_km} km</p>
+              </div>
+              
+              <div className="glass rounded-lg p-3">
+                <p className="text-gray-300 text-xs">Dominant Type</p>
+                <p className="text-emerald-400 font-bold text-sm">{data.area_info.dominant_land_type}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Land Classification Results */}
         <div className="glass rounded-xl p-6 border border-emerald-500/30 glow-green">
           <div className="flex items-center space-x-3 mb-4">
