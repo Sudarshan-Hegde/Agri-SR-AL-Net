@@ -5,6 +5,7 @@ import MapComponent from './components/MapComponent'
 import ResultsPanel from './components/ResultsPanel'
 import AnalyticsPage from './components/AnalyticsPage'
 import SettingsPage from './components/SettingsPage'
+import SearchBar from './components/SearchBar'
 
 // Navigation Bar Component
 function NavigationBar({ currentPath }) {
@@ -72,6 +73,12 @@ function HomePage({ onAnalyze }) {
   const [error, setError] = useState(null)
   const [predictionData, setPredictionData] = useState(null)
   const [selectedPos, setSelectedPos] = useState(null)
+  const [mapRef, setMapRef] = useState(null)
+
+  const handleLocationSearch = (lat, lng, displayName) => {
+    // This will be called from SearchBar
+    setSelectedPos({ lat, lng });
+  }
 
   const handleAnalyze = async (analysisData) => {
     const hasValidSelection = analysisData && 
@@ -122,7 +129,10 @@ function HomePage({ onAnalyze }) {
   }
 
   return (
-    <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 py-4 pt-24 lg:pt-28">
+    <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 py-4 pt-28 lg:pt-32">
+      {/* Search Bar - Positioned on top of everything */}
+      <SearchBar onLocationSelect={handleLocationSearch} />
+      
       <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6 min-h-[calc(100vh-140px)]">
         <div className="lg:col-span-2 xl:col-span-3 glass-card rounded-xl lg:rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-500">
           <div className="absolute top-0 left-0 right-0 z-[999] bg-black/20 backdrop-blur-sm border-b border-white/10">
@@ -143,6 +153,7 @@ function HomePage({ onAnalyze }) {
               setSelectedPos={setSelectedPos}
               onAnalyze={handleAnalyze}
               isLoading={isLoading}
+              onLocationSearch={handleLocationSearch}
             />
           </div>
         </div>

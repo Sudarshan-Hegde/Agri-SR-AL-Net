@@ -51,9 +51,7 @@ results/
 logs/
 wandb/
 
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb
+
 
 # Research and documentation (not code)
 *.pdf

@@ -1,7 +1,8 @@
-import { MapContainer, TileLayer, Marker, Popup, Polygon, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, Polygon, useMapEvents, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
 // Fix for default markers in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl
@@ -116,6 +117,101 @@ function MapClickHandler({ setSelectedPos, polygonPoints, setPolygonPoints, sele
   return null
 }
 
+// Component to track map center while scrolling/panning
+function MapCenterTracker({ onCenterChange }) {
+  const map = useMap();
+  const debounceTimer = useRef(null);
+
+  useEffect(() => {
+    const updateCenter = () => {
+      const center = map.getCenter();
+      onCenterChange(center.lat, center.lng);
+    };
+
+    // Initial center
+    updateCenter();
+
+    const handleMoveEnd = () => {
+      // Debounce to avoid too many API calls
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+      debounceTimer.current = setTimeout(() => {
+        updateCenter();
+      }, 500);
+    };
+
+    map.on('moveend', handleMoveEnd);
+    
+    return () => {
+      map.off('moveend', handleMoveEnd);
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, [map, onCenterChange]);
+
+  return null;
+}
+
+// Location name display component - wrapper that uses useMap hook
+function LocationNameDisplay({ locationName, loadingLocation, selectedPos, polygonPoints, selectionMode, mapCenterLocation, loadingMapCenter }) {
+  // This component must be inside MapContainer to use useMap
+  const map = useMap();
+  
+  const hasSelection = selectedPos || polygonPoints.length >= 3;
+  const displayLocation = hasSelection ? locationName : mapCenterLocation;
+  const isLoading = hasSelection ? loadingLocation : loadingMapCenter;
+  const icon = hasSelection ? (selectionMode === 'polygon' ? '🔷' : '📍') : '🗺️';
+  const textColor = hasSelection ? 'text-white' : 'text-gray-200';
+
+  console.log('LocationNameDisplay render:', {
+    hasSelection,
+    displayLocation,
+    isLoading,
+    locationName,
+    mapCenterLocation
+  });
+
+  if (!displayLocation && !isLoading) return null;
+
+  return (
+    <div className="leaflet-bottom leaflet-center" style={{
+      position: 'absolute',
+      bottom: '30px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      zIndex: 1000,
+      pointerEvents: 'none',
+      display: 'flex',
+      justifyContent: 'center'
+    }}>
+      <div className="glass rounded-lg px-4 py-2 shadow-lg" style={{ 
+        pointerEvents: 'auto',
+        maxWidth: 'calc(100vw - 100px)',
+        width: 'auto'
+      }}>
+        {isLoading ? (
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-gray-300 text-sm">Loading...</span>
+          </div>
+        ) : displayLocation ? (
+          <div className="flex items-center space-x-2">
+            <span className="text-lg">{icon}</span>
+            <span className={`${textColor} font-medium text-sm`} style={{
+              maxWidth: '400px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
+            }}>{displayLocation}</span>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 // Mode selector for point vs polygon selection
 function ModeSelector({ selectionMode, setSelectionMode, onClearPolygon }) {
   return (
@@ -226,9 +322,129 @@ function MapInstructions({ selectedPos, polygonPoints, selectionMode }) {
   )
 }
 
-function MapComponent({ selectedPos, setSelectedPos, onAnalyze, isLoading }) {
+function MapComponent({ selectedPos, setSelectedPos, onAnalyze, isLoading, onLocationSearch }) {
   const [selectionMode, setSelectionMode] = useState('point'); // 'point' or 'polygon'
   const [polygonPoints, setPolygonPoints] = useState([]);
+  const [locationName, setLocationName] = useState('');
+  const [loadingLocation, setLoadingLocation] = useState(false);
+  const [mapCenterLocation, setMapCenterLocation] = useState('');
+  const [loadingMapCenter, setLoadingMapCenter] = useState(false);
+  const [searchedLocation, setSearchedLocation] = useState(null);
+  const mapRef = useRef(null);
+
+  // Component to handle flying to searched location
+  const MapController = () => {
+    const map = useMap();
+    
+    useEffect(() => {
+      mapRef.current = map;
+    }, [map]);
+
+    useEffect(() => {
+      if (searchedLocation && map) {
+        map.flyTo([searchedLocation.lat, searchedLocation.lng], 12, {
+          duration: 2
+        });
+      }
+    }, [searchedLocation, map]);
+
+    return null;
+  };
+
+  const handleLocationSearch = (lat, lng, displayName) => {
+    setSearchedLocation({ lat, lng, displayName });
+    // Optionally set as selected position
+    setSelectedPos({ lat, lng });
+    setPolygonPoints([]);
+    setSelectionMode('point');
+    
+    // Call parent callback if provided
+    if (onLocationSearch) {
+      onLocationSearch(lat, lng, displayName);
+    }
+  };
+
+  // Fetch location name for map center (while scrolling)
+  const fetchLocationName = async (lat, lng, isMapCenter = false) => {
+    if (isMapCenter) {
+      setLoadingMapCenter(true);
+    } else {
+      setLoadingLocation(true);
+    }
+    
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`,
+        {
+          headers: {
+            'Accept-Language': 'en'
+          }
+        }
+      );
+      
+      const data = await response.json();
+      
+      if (data && data.address) {
+        // Build a readable location name
+        const parts = [];
+        if (data.address.city) parts.push(data.address.city);
+        else if (data.address.town) parts.push(data.address.town);
+        else if (data.address.village) parts.push(data.address.village);
+        else if (data.address.county) parts.push(data.address.county);
+        
+        if (data.address.state) parts.push(data.address.state);
+        if (data.address.country) parts.push(data.address.country);
+        
+        const name = parts.join(', ') || data.display_name;
+        
+        console.log('Fetched location name:', name, 'isMapCenter:', isMapCenter);
+        
+        if (isMapCenter) {
+          setMapCenterLocation(name);
+        } else {
+          setLocationName(name);
+        }
+      } else {
+        if (isMapCenter) {
+          setMapCenterLocation('');
+        } else {
+          setLocationName('Location Name Unavailable');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching location name:', error);
+      if (isMapCenter) {
+        setMapCenterLocation('');
+      } else {
+        setLocationName('');
+      }
+    } finally {
+      if (isMapCenter) {
+        setLoadingMapCenter(false);
+      } else {
+        setLoadingLocation(false);
+      }
+    }
+  };
+
+  // Handle map center changes (while scrolling/panning)
+  const handleMapCenterChange = (lat, lng) => {
+    fetchLocationName(lat, lng, true);
+  };
+
+  // Fetch location name when position changes (for selected points)
+  useEffect(() => {
+    if (selectedPos && selectionMode === 'point') {
+      fetchLocationName(selectedPos.lat, selectedPos.lng, false);
+    } else if (selectionMode === 'polygon' && polygonPoints.length >= 3) {
+      // For polygon, use centroid
+      const avgLat = polygonPoints.reduce((sum, p) => sum + p[0], 0) / polygonPoints.length;
+      const avgLng = polygonPoints.reduce((sum, p) => sum + p[1], 0) / polygonPoints.length;
+      fetchLocationName(avgLat, avgLng, false);
+    } else {
+      setLocationName('');
+    }
+  }, [selectedPos, polygonPoints, selectionMode]);
 
   const handleClearPolygon = () => {
     setPolygonPoints([]);
@@ -260,6 +476,9 @@ function MapComponent({ selectedPos, setSelectedPos, onAnalyze, isLoading }) {
           attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
         />
         
+        <MapController />
+        <MapCenterTracker onCenterChange={handleMapCenterChange} />
+        
         <MapClickHandler 
           setSelectedPos={setSelectedPos}
           polygonPoints={polygonPoints}
@@ -277,6 +496,16 @@ function MapComponent({ selectedPos, setSelectedPos, onAnalyze, isLoading }) {
               <div className="text-center p-2">
                 <div className="mb-3">
                   <h3 className="text-white font-semibold mb-2">📍 Selected Location</h3>
+                  {loadingLocation ? (
+                    <div className="flex items-center justify-center space-x-2 mb-2">
+                      <div className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-gray-300 text-sm">Loading location...</span>
+                    </div>
+                  ) : locationName ? (
+                    <div className="mb-2">
+                      <p className="text-blue-300 font-medium text-sm">{locationName}</p>
+                    </div>
+                  ) : null}
                   <div className="text-gray-300 text-sm space-y-1">
                     <p><strong>Lat:</strong> {selectedPos.lat.toFixed(6)}</p>
                     <p><strong>Lng:</strong> {selectedPos.lng.toFixed(6)}</p>
@@ -333,6 +562,16 @@ function MapComponent({ selectedPos, setSelectedPos, onAnalyze, isLoading }) {
             <Popup closeButton={false}>
               <div className="text-center p-2">
                 <h3 className="text-white font-semibold mb-2">🔷 Selected Polygon</h3>
+                {loadingLocation ? (
+                  <div className="flex items-center justify-center space-x-2 mb-2">
+                    <div className="w-3 h-3 border border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-gray-300 text-sm">Loading location...</span>
+                  </div>
+                ) : locationName ? (
+                  <div className="mb-2">
+                    <p className="text-emerald-300 font-medium text-sm">{locationName}</p>
+                  </div>
+                ) : null}
                 <p className="text-gray-300 text-sm mb-3">
                   {polygonPoints.length} points selected
                 </p>
@@ -354,6 +593,16 @@ function MapComponent({ selectedPos, setSelectedPos, onAnalyze, isLoading }) {
             </Popup>
           </Polygon>
         )}
+        
+        <LocationNameDisplay 
+          locationName={locationName}
+          loadingLocation={loadingLocation}
+          selectedPos={selectedPos}
+          polygonPoints={polygonPoints}
+          selectionMode={selectionMode}
+          mapCenterLocation={mapCenterLocation}
+          loadingMapCenter={loadingMapCenter}
+        />
       </MapContainer>
 
       {/* Overlays */}
@@ -387,6 +636,11 @@ function MapComponent({ selectedPos, setSelectedPos, onAnalyze, isLoading }) {
       )}
     </div>
   )
+}
+
+// Export both the component and a way to pass the search handler
+MapComponent.defaultProps = {
+  onLocationSearch: null
 }
 
 export default MapComponent

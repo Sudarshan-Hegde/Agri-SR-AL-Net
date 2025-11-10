@@ -127,8 +127,7 @@ function AnalyticsPage({ history, settings }) {
                       <div className="glass px-3 py-1 rounded-lg text-sm text-gray-300">
                         {analysis.type === 'point' ? 
                           `Location: (${analysis.lat.toFixed(4)}°N, ${analysis.lng.toFixed(4)}°E)` :
-                          `                  ? `${analysis.points.length} points - ${calculateArea(analysis.points)} hectares - ${convertDistance(analysis.perimeter || 0, distanceUnit)} perimeter` :
-                  `Single Point Analysis``
+                          `Polygon: ${analysis.points?.length || 0} points - ${calculateArea(analysis.points)} hectares - ${convertDistance(analysis.perimeter || 0, distanceUnit)} perimeter`
                         }
                       </div>
                     </div>

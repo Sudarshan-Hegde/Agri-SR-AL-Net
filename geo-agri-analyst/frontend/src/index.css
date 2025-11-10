@@ -166,6 +166,26 @@ body {
   border-radius: 16px;
 }
 
+/* Custom location name control - positioned at bottom center of map */
+.leaflet-control-location {
+  position: absolute !important;
+  bottom: 30px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 1000 !important;
+  pointer-events: none !important;
+  top: auto !important;
+  right: auto !important;
+}
+
+.leaflet-top.leaflet-left .leaflet-control-location {
+  position: absolute !important;
+  bottom: 30px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  top: auto !important;
+}
+
 /* Leaflet popup dark black theme */
 .leaflet-popup-content-wrapper {
   background: rgba(0, 0, 0, 0.95) !important;
