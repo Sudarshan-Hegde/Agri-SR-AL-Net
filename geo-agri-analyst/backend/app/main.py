@@ -5,12 +5,14 @@ from pydantic import BaseModel
 from typing import List, Optional, Union
 import uvicorn
 import math
+import logging
 
-# Handle both relative and absolute imports
-try:
-    from .weather_service import get_agricultural_climate_summary
-except ImportError:
-    from weather_service import get_agricultural_climate_summary
+# Reduce httpx logging noise
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
+# Relative imports for package structure
+from app.weather_service import get_agricultural_climate_summary
+from app.huggingface_service import get_hf_service
 
 app = FastAPI(title="Geo-Agri Analyst API", version="1.0.0")
 
@@ -150,7 +152,18 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "mode": "live_backend_with_weather"}
+    """Health check endpoint - also checks HuggingFace Space availability"""
+    hf_service = get_hf_service()
+    hf_healthy = await hf_service.check_health()
+    
+    return {
+        "status": "healthy", 
+        "mode": "live_backend_with_weather_and_ml",
+        "services": {
+            "weather": "available",
+            "huggingface_ml": "available" if hf_healthy else "unavailable (using fallback)"
+        }
+    }
 
 @app.post("/api/v1/weather")
 async def get_weather_data(coords: Coords):
@@ -224,13 +237,16 @@ async def analyze_location(request: Union[Coords, AnalysisRequest]):
         points = None
         print(f"Received point analysis at: {lat}, {lng}")
     
-    # Simulate processing delay for land classification
-    time.sleep(1.0)  # Reduced delay since we're now making real API calls
+    # Get real ML predictions from HuggingFace Space
+    hf_service = get_hf_service()
+    ml_results = await hf_service.predict(lat, lng)
     
-    # Generate land classification results
-    land_classes = ["Farmland", "Forest", "Urban", "Water Body", "Grassland", "Desert", "Industrial"]
-    selected_class = land_classes[hash(f"{lat}{lng}") % len(land_classes)]
-    confidence = 0.85 + (hash(f"{lat}{lng}") % 15) / 100  # Between 0.85-0.99
+    # Extract results
+    selected_class = ml_results.get("land_class", "Unknown")
+    confidence = ml_results.get("confidence", 0.0)
+    before_img_b64 = ml_results.get("before_image_b64", IMG_LR_B64)
+    after_img_b64 = ml_results.get("after_image_b64", IMG_SR_B64)
+    top_predictions = ml_results.get("predictions", {})
     
     # Fetch real weather/climate data
     weather_data = None
@@ -264,12 +280,14 @@ async def analyze_location(request: Union[Coords, AnalysisRequest]):
     result = {
         "land_class": selected_class,
         "confidence": confidence,
-        "before_image_b64": IMG_LR_B64,
-        "after_image_b64": IMG_SR_B64,
+        "before_image_b64": before_img_b64,
+        "after_image_b64": after_img_b64,
+        "top_predictions": top_predictions,  # Top 5 predictions from model
         "analysis_type": analysis_type,
         "coordinates": {"lat": lat, "lng": lng},
         "area_info": area_info,
-        "weather_data": weather_data  # Include weather data in response
+        "weather_data": weather_data,  # Include weather data in response
+        "ml_source": ml_results.get("source", "unknown")  # Track if using HF or fallback
     }
     
     return result
