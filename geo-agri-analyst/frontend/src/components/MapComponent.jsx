@@ -376,6 +376,27 @@ function MapComponent({ selectedPos, setSelectedPos, onAnalyze, isLoading, onLoc
       }
     }, [searchedLocation, map]);
 
+    // Handle map resize when container dimensions change
+    useEffect(() => {
+      const resizeObserver = new ResizeObserver(() => {
+        if (map) {
+          // Invalidate size and redraw map
+          setTimeout(() => {
+            map.invalidateSize();
+          }, 100);
+        }
+      });
+
+      const container = map.getContainer().parentElement;
+      if (container) {
+        resizeObserver.observe(container);
+      }
+
+      return () => {
+        resizeObserver.disconnect();
+      };
+    }, [map]);
+
     return null;
   };
 
@@ -492,8 +513,8 @@ function MapComponent({ selectedPos, setSelectedPos, onAnalyze, isLoading, onLoc
   return (
     <div className="relative h-full w-full min-h-[400px] sm:min-h-[500px] lg:min-h-[600px]">
       <MapContainer 
-        center={[40.7128, -74.0060]} // NYC default
-        zoom={6}
+        center={[20.5937, 78.9629]} // India center
+        zoom={5}
         style={{ height: '100%', width: '100%' }}
         className="w-full h-full"
         attributionControl={false}

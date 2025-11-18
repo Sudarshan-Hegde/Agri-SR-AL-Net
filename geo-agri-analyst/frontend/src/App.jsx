@@ -135,14 +135,14 @@ function HomePage({ onAnalyze }) {
       {/* Add spacing for search bar */}
       <div className="mb-24 lg:mb-16"></div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6 min-h-[calc(100vh-140px)]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6 lg:items-stretch">
         <div className="lg:col-span-2 xl:col-span-3 relative">
           {/* Search Bar - Positioned above map card */}
           <div className="absolute -top-20 lg:-top-24 left-1/2 transform -translate-x-1/2 w-11/12 max-w-2xl z-[9999]">
             <SearchBar onLocationSelect={handleLocationSearch} />
           </div>
           
-          <div className="glass-card rounded-xl lg:rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-500 h-[600px] lg:h-[700px] relative">
+          <div className="glass-card rounded-xl lg:rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-500 h-full min-h-[600px] relative">
             <div className="absolute top-0 left-0 right-0 z-[999] bg-black/20 backdrop-blur-sm border-b border-white/10">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 lg:p-4 gap-2 sm:gap-0">
                 <div className="text-xs lg:text-sm text-gray-400 glass px-2 lg:px-3 py-1 rounded-full">
@@ -155,7 +155,7 @@ function HomePage({ onAnalyze }) {
               </div>
             </div>
             
-            <div className="w-full h-full">
+            <div className="absolute inset-0">
               <MapComponent 
                 selectedPos={selectedPos}
                 setSelectedPos={setSelectedPos}
@@ -239,7 +239,7 @@ function HomePage({ onAnalyze }) {
             </div>
           </div>
 
-          <div className="glass-card rounded-xl lg:rounded-2xl p-4 lg:p-6 flex-1 overflow-y-auto max-h-[calc(100vh-400px)] lg:max-h-[calc(100vh-300px)]">
+          <div className="glass-card rounded-xl lg:rounded-2xl p-4 lg:p-6 overflow-y-auto">
             <ResultsPanel 
               isLoading={isLoading}
               error={error}
