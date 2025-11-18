@@ -73,6 +73,8 @@ function HomePage({ onAnalyze }) {
   const [error, setError] = useState(null)
   const [predictionData, setPredictionData] = useState(null)
   const [selectedPos, setSelectedPos] = useState(null)
+  const [polygonPoints, setPolygonPoints] = useState([])
+  const [selectionMode, setSelectionMode] = useState('point')
   const [mapRef, setMapRef] = useState(null)
 
   const handleLocationSearch = (lat, lng, displayName) => {
@@ -129,32 +131,43 @@ function HomePage({ onAnalyze }) {
   }
 
   return (
-    <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 py-4 pt-28 lg:pt-32">
-      {/* Search Bar - Positioned on top of everything */}
-      <SearchBar onLocationSelect={handleLocationSearch} />
+    <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 py-4 pt-32 lg:pt-36">
+      {/* Add spacing for search bar */}
+      <div className="mb-24 lg:mb-16"></div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6 min-h-[calc(100vh-140px)]">
-        <div className="lg:col-span-2 xl:col-span-3 glass-card rounded-xl lg:rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-500">
-          <div className="absolute top-0 left-0 right-0 z-[999] bg-black/20 backdrop-blur-sm border-b border-white/10">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 lg:p-4 gap-2 sm:gap-0">
-              <div className="flex items-center space-x-2 lg:space-x-3">
-                <div className="w-2 h-2 lg:w-3 lg:h-3 bg-emerald-400 rounded-full animate-pulse"></div>
-                <h2 className="text-lg lg:text-xl font-bold text-white">Interactive Map</h2>
-              </div>
-              <div className="text-xs lg:text-sm text-gray-400 glass px-2 lg:px-3 py-1 rounded-full">
-                Click anywhere to analyze
-              </div>
-            </div>
+        <div className="lg:col-span-2 xl:col-span-3 relative">
+          {/* Search Bar - Positioned above map card */}
+          <div className="absolute -top-20 lg:-top-24 left-1/2 transform -translate-x-1/2 w-11/12 max-w-2xl z-[9999]">
+            <SearchBar onLocationSelect={handleLocationSearch} />
           </div>
           
-          <div className="w-full h-full">
-            <MapComponent 
-              selectedPos={selectedPos}
-              setSelectedPos={setSelectedPos}
-              onAnalyze={handleAnalyze}
-              isLoading={isLoading}
-              onLocationSearch={handleLocationSearch}
-            />
+          <div className="glass-card rounded-xl lg:rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-500 h-[600px] lg:h-[700px] relative">
+            <div className="absolute top-0 left-0 right-0 z-[999] bg-black/20 backdrop-blur-sm border-b border-white/10">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 lg:p-4 gap-2 sm:gap-0">
+                <div className="text-xs lg:text-sm text-gray-400 glass px-2 lg:px-3 py-1 rounded-full">
+                  Click anywhere to analyze
+                </div>
+                <div className="flex items-center space-x-2 lg:space-x-3">
+                  <div className="w-2 h-2 lg:w-3 lg:h-3 bg-emerald-400 rounded-full animate-pulse"></div>
+                  <h2 className="text-lg lg:text-xl font-bold text-white">Interactive Map</h2>
+                </div>
+              </div>
+            </div>
+            
+            <div className="w-full h-full">
+              <MapComponent 
+                selectedPos={selectedPos}
+                setSelectedPos={setSelectedPos}
+                onAnalyze={handleAnalyze}
+                isLoading={isLoading}
+                onLocationSearch={handleLocationSearch}
+                polygonPoints={polygonPoints}
+                setPolygonPoints={setPolygonPoints}
+                selectionMode={selectionMode}
+                setSelectionMode={setSelectionMode}
+              />
+            </div>
           </div>
         </div>
 
@@ -166,18 +179,45 @@ function HomePage({ onAnalyze }) {
             </div>
             
             <div className="space-y-3 lg:space-y-4">
-              {selectedPos && (
+              {/* Selection Info Display */}
+              {selectionMode === 'point' && selectedPos && (
                 <div className="glass rounded-lg p-3 lg:p-4">
-                  <p className="text-xs lg:text-sm text-gray-400 mb-1">Selected Location</p>
+                  <p className="text-xs lg:text-sm text-gray-400 mb-1">📍 Selected Point</p>
                   <p className="text-sm lg:text-base text-white font-mono">
                     {selectedPos.lat.toFixed(4)}, {selectedPos.lng.toFixed(4)}
                   </p>
                 </div>
               )}
               
+              {selectionMode === 'polygon' && polygonPoints.length > 0 && (
+                <div className="glass rounded-lg p-3 lg:p-4">
+                  <p className="text-xs lg:text-sm text-gray-400 mb-1">🔷 Polygon Selection</p>
+                  <p className="text-sm lg:text-base text-white font-mono">
+                    {polygonPoints.length} point{polygonPoints.length !== 1 ? 's' : ''} selected
+                  </p>
+                  {polygonPoints.length >= 3 && (
+                    <p className="text-xs text-emerald-400 mt-1">✓ Ready to analyze</p>
+                  )}
+                  {polygonPoints.length < 3 && polygonPoints.length > 0 && (
+                    <p className="text-xs text-yellow-400 mt-1">Need {3 - polygonPoints.length} more point{3 - polygonPoints.length !== 1 ? 's' : ''}</p>
+                  )}
+                </div>
+              )}
+              
+              {/* Unified Start Analysis Button */}
               <button
-                onClick={() => handleAnalyze({ type: 'point', position: selectedPos })}
-                disabled={!selectedPos || isLoading}
+                onClick={() => {
+                  if (selectionMode === 'polygon' && polygonPoints.length >= 3) {
+                    handleAnalyze({ type: 'polygon', points: polygonPoints });
+                  } else if (selectionMode === 'point' && selectedPos) {
+                    handleAnalyze({ type: 'point', position: selectedPos });
+                  }
+                }}
+                disabled={(
+                  (selectionMode === 'point' && !selectedPos) ||
+                  (selectionMode === 'polygon' && polygonPoints.length < 3) ||
+                  isLoading
+                )}
                 className="w-full glass-button bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white font-bold py-3 lg:py-4 px-4 lg:px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] text-sm lg:text-base"
               >
                 {isLoading ? (
@@ -187,8 +227,12 @@ function HomePage({ onAnalyze }) {
                   </div>
                 ) : (
                   <div className="flex items-center justify-center space-x-2">
-                    <span>🔍</span>
-                    <span>Start Analysis</span>
+                    <span>{selectionMode === 'polygon' ? '🔷' : '🔍'}</span>
+                    <span>
+                      {selectionMode === 'polygon' 
+                        ? `Analyze Polygon${polygonPoints.length >= 3 ? ` (${polygonPoints.length} points)` : ''}` 
+                        : 'Start Analysis'}
+                    </span>
                   </div>
                 )}
               </button>

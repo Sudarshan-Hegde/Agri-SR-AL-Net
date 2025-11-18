@@ -65,10 +65,8 @@ function SearchBar({ onLocationSelect }) {
 
   return (
     <div 
-      className="fixed top-24 left-1/2 w-11/12 max-w-2xl" 
+      className="w-full" 
       style={{ 
-        transform: 'translateX(-50%)',
-        zIndex: 9999,
         pointerEvents: 'auto'
       }}
     >

@@ -253,8 +253,9 @@ function ModeSelector({ selectionMode, setSelectionMode, onClearPolygon }) {
   )
 }
 
-// Floating analyze button with glassmorphism
-function AnalyzeButton({ onAnalyze, isLoading, selectedPos, polygonPoints, selectionMode }) {
+// Floating analyze button component that appears on the map near the selection
+function AnalyzeButtonOnMap({ onAnalyze, isLoading, selectedPos, polygonPoints, selectionMode }) {
+  const map = useMap();
   const hasSelection = selectedPos || (polygonPoints.length >= 3);
   
   if (!hasSelection) return null;
@@ -265,12 +266,40 @@ function AnalyzeButton({ onAnalyze, isLoading, selectedPos, polygonPoints, selec
     return "Analyze Point";
   };
 
-  return (
-    <div className="absolute top-16 right-4 lg:top-20 lg:right-6 z-[1000]">
+  // Calculate position based on selection
+  let position;
+  if (selectionMode === 'polygon' && polygonPoints.length >= 3) {
+    // Use centroid of polygon
+    const avgLat = polygonPoints.reduce((sum, p) => sum + p[0], 0) / polygonPoints.length;
+    const avgLng = polygonPoints.reduce((sum, p) => sum + p[1], 0) / polygonPoints.length;
+    position = [avgLat, avgLng];
+  } else if (selectedPos) {
+    position = [selectedPos.lat, selectedPos.lng];
+  }
+
+  if (!position) return null;
+
+  // Convert lat/lng to pixel coordinates
+  const point = map.latLngToContainerPoint(position);
+  
+  return createPortal(
+    <div 
+      style={{
+        position: 'absolute',
+        left: `${point.x}px`,
+        top: `${point.y - 80}px`, // Position above the marker
+        transform: 'translateX(-50%)',
+        zIndex: 1000,
+        pointerEvents: 'auto'
+      }}
+    >
       <button
-        onClick={onAnalyze}
+        onClick={(e) => {
+          e.stopPropagation();
+          onAnalyze();
+        }}
         disabled={isLoading}
-        className={`glass-button text-white font-semibold py-2 px-4 lg:py-3 lg:px-6 rounded-lg lg:rounded-xl text-sm lg:text-base transition-all duration-300 ${
+        className={`glass-button text-white font-semibold py-2 px-4 lg:py-3 lg:px-6 rounded-lg lg:rounded-xl text-sm lg:text-base transition-all duration-300 shadow-2xl ${
           isLoading 
             ? 'opacity-50 cursor-not-allowed'
             : 'hover:scale-105 hover:glow-blue'
@@ -288,8 +317,9 @@ function AnalyzeButton({ onAnalyze, isLoading, selectedPos, polygonPoints, selec
           </div>
         )}
       </button>
-    </div>
-  )
+    </div>,
+    map.getContainer()
+  );
 }
 
 // Instructions overlay
@@ -322,9 +352,7 @@ function MapInstructions({ selectedPos, polygonPoints, selectionMode }) {
   )
 }
 
-function MapComponent({ selectedPos, setSelectedPos, onAnalyze, isLoading, onLocationSearch }) {
-  const [selectionMode, setSelectionMode] = useState('point'); // 'point' or 'polygon'
-  const [polygonPoints, setPolygonPoints] = useState([]);
+function MapComponent({ selectedPos, setSelectedPos, onAnalyze, isLoading, onLocationSearch, polygonPoints, setPolygonPoints, selectionMode, setSelectionMode }) {
   const [locationName, setLocationName] = useState('');
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [mapCenterLocation, setMapCenterLocation] = useState('');
@@ -603,6 +631,14 @@ function MapComponent({ selectedPos, setSelectedPos, onAnalyze, isLoading, onLoc
           mapCenterLocation={mapCenterLocation}
           loadingMapCenter={loadingMapCenter}
         />
+        
+        <AnalyzeButtonOnMap 
+          onAnalyze={handleAnalyze}
+          isLoading={isLoading}
+          selectedPos={selectedPos}
+          polygonPoints={polygonPoints}
+          selectionMode={selectionMode}
+        />
       </MapContainer>
 
       {/* Overlays */}
@@ -610,13 +646,6 @@ function MapComponent({ selectedPos, setSelectedPos, onAnalyze, isLoading, onLoc
         selectionMode={selectionMode}
         setSelectionMode={setSelectionMode}
         onClearPolygon={handleClearPolygon}
-      />
-      <AnalyzeButton 
-        onAnalyze={handleAnalyze}
-        isLoading={isLoading}
-        selectedPos={selectedPos}
-        polygonPoints={polygonPoints}
-        selectionMode={selectionMode}
       />
       <MapInstructions 
         selectedPos={selectedPos}
@@ -636,11 +665,6 @@ function MapComponent({ selectedPos, setSelectedPos, onAnalyze, isLoading, onLoc
       )}
     </div>
   )
-}
-
-// Export both the component and a way to pass the search handler
-MapComponent.defaultProps = {
-  onLocationSearch: null
 }
 
 export default MapComponent

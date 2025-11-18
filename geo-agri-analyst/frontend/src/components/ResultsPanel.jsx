@@ -154,11 +154,14 @@ function ResultsPanel({ isLoading, error, data }) {
               <span className="text-white text-lg">🌱</span>
             </div>
             <h3 className="text-emerald-400 font-bold text-lg">Land Classification</h3>
+            {data.ml_source === 'huggingface' && (
+              <span className="glass px-2 py-1 rounded-full text-xs text-blue-400">🤖 AI-Powered</span>
+            )}
           </div>
           
           <div className="space-y-3">
             <div className="glass rounded-lg p-3">
-              <p className="text-gray-300 text-sm">Land Type</p>
+              <p className="text-gray-300 text-sm">Primary Land Type</p>
               <p className="text-white font-bold text-lg">{data.land_class}</p>
             </div>
             
@@ -176,6 +179,33 @@ function ResultsPanel({ isLoading, error, data }) {
                 </span>
               </div>
             </div>
+
+            {/* Top Predictions from ML Model */}
+            {data.top_predictions && Object.keys(data.top_predictions).length > 0 && (
+              <div className="glass rounded-lg p-3">
+                <p className="text-gray-300 text-sm mb-3">Top Predictions</p>
+                <div className="space-y-2">
+                  {Object.entries(data.top_predictions).slice(0, 5).map(([label, score], idx) => (
+                    <div key={idx} className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400 flex-1 truncate pr-2">{label}</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-16 bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full ${
+                              idx === 0 ? 'bg-emerald-400' : 'bg-blue-400'
+                            }`}
+                            style={{ width: `${score * 100}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-xs font-medium text-white w-10 text-right">
+                          {Math.round(score * 100)}%
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -190,8 +220,8 @@ function ResultsPanel({ isLoading, error, data }) {
           
           <div className="grid grid-cols-2 gap-4">
             <div className="glass rounded-lg p-4 text-center">
-              <p className="text-gray-300 text-sm font-medium mb-3">Before (Low-Res)</p>
-              <div className="w-16 h-16 mx-auto mb-3 rounded-lg overflow-hidden border border-gray-600">
+              <p className="text-gray-300 text-sm font-medium mb-3">Before (30×30)</p>
+              <div className="w-24 h-24 mx-auto mb-3 rounded-lg overflow-hidden border border-gray-600">
                 <img 
                   src={`data:image/png;base64,${data.before_image_b64}`}
                   alt="Before enhancement"
@@ -199,28 +229,37 @@ function ResultsPanel({ isLoading, error, data }) {
                   style={{ imageRendering: 'pixelated' }}
                 />
               </div>
-              <p className="text-xs text-gray-400">Original satellite</p>
+              <p className="text-xs text-gray-400">Low Resolution</p>
             </div>
             
             <div className="glass rounded-lg p-4 text-center">
-              <p className="text-gray-300 text-sm font-medium mb-3">After (Enhanced)</p>
-              <div className="w-16 h-16 mx-auto mb-3 rounded-lg overflow-hidden border border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+              <p className="text-gray-300 text-sm font-medium mb-3">After (120×120)</p>
+              <div className="w-24 h-24 mx-auto mb-3 rounded-lg overflow-hidden border border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
                 <img 
                   src={`data:image/png;base64,${data.after_image_b64}`}
                   alt="After enhancement"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <p className="text-xs text-emerald-400">AI Enhanced</p>
+              <p className="text-xs text-emerald-400">4× Enhanced</p>
             </div>
           </div>
           
           <div className="mt-4 glass rounded-lg p-3">
             <div className="flex items-center space-x-2 text-sm text-gray-300">
               <span className="text-blue-400">✨</span>
-              <span>Super-resolution enhancement applied using advanced AI models</span>
+              <span>RFB-ESRGAN super-resolution (4× upscaling)</span>
             </div>
           </div>
+          
+          {data.ml_source === 'fallback' && (
+            <div className="mt-3 glass rounded-lg p-3 border border-yellow-500/30">
+              <div className="flex items-center space-x-2 text-sm text-yellow-400">
+                <span>⚠️</span>
+                <span>Using fallback predictions - HuggingFace model may be sleeping</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Future Features */}
