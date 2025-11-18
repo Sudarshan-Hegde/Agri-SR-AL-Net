@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, Marker, Popup, Polygon, useMapEvents, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, Polygon, useMapEvents, useMap, CircleMarker } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { useState, useEffect, useRef } from 'react'
@@ -152,6 +152,176 @@ function MapCenterTracker({ onCenterChange }) {
   }, [map, onCenterChange]);
 
   return null;
+}
+
+// Semantic Zoom Labels - Shows different information based on zoom level
+function SemanticZoomLabels() {
+  const map = useMap();
+  const [zoomLevel, setZoomLevel] = useState(map.getZoom());
+  const [labels, setLabels] = useState([]);
+
+  // Define label data for different zoom levels
+  const labelData = {
+    // Zoom 1-4: Continents and major regions
+    continent: [
+      { position: [28.6139, 77.2090], name: 'India', minZoom: 1, maxZoom: 4 },
+      { position: [35.8617, 104.1954], name: 'China', minZoom: 1, maxZoom: 4 },
+      { position: [37.0902, -95.7129], name: 'United States', minZoom: 1, maxZoom: 4 },
+      { position: [-14.2350, -51.9253], name: 'Brazil', minZoom: 1, maxZoom: 4 },
+      { position: [51.1657, 10.4515], name: 'Germany', minZoom: 1, maxZoom: 4 },
+    ],
+    // Zoom 5-7: States/Provinces
+    state: [
+      // India states
+      { position: [19.0760, 72.8777], name: 'Maharashtra', minZoom: 5, maxZoom: 7 },
+      { position: [28.7041, 77.1025], name: 'Delhi', minZoom: 5, maxZoom: 7 },
+      { position: [13.0827, 80.2707], name: 'Tamil Nadu', minZoom: 5, maxZoom: 7 },
+      { position: [12.9716, 77.5946], name: 'Karnataka', minZoom: 5, maxZoom: 7 },
+      { position: [26.8467, 80.9462], name: 'Uttar Pradesh', minZoom: 5, maxZoom: 7 },
+      { position: [22.2587, 71.1924], name: 'Gujarat', minZoom: 5, maxZoom: 7 },
+      { position: [30.7333, 76.7794], name: 'Punjab', minZoom: 5, maxZoom: 7 },
+      { position: [23.6102, 85.2799], name: 'Jharkhand', minZoom: 5, maxZoom: 7 },
+    ],
+    // Zoom 8-10: Major cities
+    city: [
+      // India cities
+      { position: [28.6139, 77.2090], name: 'New Delhi', minZoom: 8, maxZoom: 10 },
+      { position: [19.0760, 72.8777], name: 'Mumbai', minZoom: 8, maxZoom: 10 },
+      { position: [12.9716, 77.5946], name: 'Bengaluru', minZoom: 8, maxZoom: 10 },
+      { position: [13.0827, 80.2707], name: 'Chennai', minZoom: 8, maxZoom: 10 },
+      { position: [17.3850, 78.4867], name: 'Hyderabad', minZoom: 8, maxZoom: 10 },
+      { position: [22.5726, 88.3639], name: 'Kolkata', minZoom: 8, maxZoom: 10 },
+      { position: [23.0225, 72.5714], name: 'Ahmedabad', minZoom: 8, maxZoom: 10 },
+      { position: [18.5204, 73.8567], name: 'Pune', minZoom: 8, maxZoom: 10 },
+    ],
+    // Zoom 11-13: Districts/Neighborhoods
+    district: [
+      { position: [28.6517, 77.2219], name: 'Connaught Place', minZoom: 11, maxZoom: 13 },
+      { position: [19.0176, 72.8561], name: 'Andheri', minZoom: 11, maxZoom: 13 },
+      { position: [12.9352, 77.6245], name: 'Whitefield', minZoom: 11, maxZoom: 13 },
+      { position: [13.0569, 80.2425], name: 'T. Nagar', minZoom: 11, maxZoom: 13 },
+    ],
+    // Zoom 14+: Local landmarks (shown when very zoomed in)
+    landmark: [
+      { position: [28.6129, 77.2295], name: 'India Gate', minZoom: 14, maxZoom: 20 },
+      { position: [18.9220, 72.8347], name: 'Gateway of India', minZoom: 14, maxZoom: 20 },
+      { position: [12.9767, 77.5993], name: 'MG Road', minZoom: 14, maxZoom: 20 },
+    ]
+  };
+
+  useEffect(() => {
+    const updateZoom = () => {
+      const currentZoom = map.getZoom();
+      setZoomLevel(currentZoom);
+
+      // Determine which labels to show based on zoom level
+      const visibleLabels = [];
+      Object.values(labelData).forEach(category => {
+        category.forEach(label => {
+          if (currentZoom >= label.minZoom && currentZoom <= label.maxZoom) {
+            visibleLabels.push(label);
+          }
+        });
+      });
+      
+      setLabels(visibleLabels);
+    };
+
+    map.on('zoomend', updateZoom);
+    updateZoom(); // Initial call
+
+    return () => {
+      map.off('zoomend', updateZoom);
+    };
+  }, [map]);
+
+  // Determine label style based on zoom level
+  const getLabelStyle = (zoom) => {
+    if (zoom <= 4) {
+      return {
+        fontSize: '16px',
+        fontWeight: 'bold',
+        padding: '8px 12px',
+        background: 'rgba(0, 0, 0, 0.85)',
+        color: '#60A5FA', // blue-400
+        textShadow: '0 0 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.8)',
+      };
+    } else if (zoom <= 7) {
+      return {
+        fontSize: '14px',
+        fontWeight: '600',
+        padding: '6px 10px',
+        background: 'rgba(0, 0, 0, 0.85)',
+        color: '#34D399', // emerald-400
+        textShadow: '0 0 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.8)',
+      };
+    } else if (zoom <= 10) {
+      return {
+        fontSize: '13px',
+        fontWeight: '500',
+        padding: '5px 8px',
+        background: 'rgba(0, 0, 0, 0.8)',
+        color: '#FBBF24', // amber-400
+        textShadow: '0 0 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.8)',
+      };
+    } else if (zoom <= 13) {
+      return {
+        fontSize: '12px',
+        fontWeight: '500',
+        padding: '4px 7px',
+        background: 'rgba(0, 0, 0, 0.8)',
+        color: '#A78BFA', // violet-400
+        textShadow: '0 0 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.8)',
+      };
+    } else {
+      return {
+        fontSize: '11px',
+        fontWeight: '400',
+        padding: '3px 6px',
+        background: 'rgba(0, 0, 0, 0.75)',
+        color: '#F472B6', // pink-400
+        textShadow: '0 0 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.8)',
+      };
+    }
+  };
+
+  const labelStyle = getLabelStyle(zoomLevel);
+
+  return (
+    <>
+      {labels.map((label, index) => (
+        <CircleMarker
+          key={`${label.name}-${index}`}
+          center={label.position}
+          radius={0}
+          pathOptions={{ opacity: 0, fillOpacity: 0 }}
+        >
+          <Popup
+            permanent
+            closeButton={false}
+            className="semantic-zoom-label"
+            offset={[0, 0]}
+            autoPan={false}
+          >
+            <div
+              style={{
+                ...labelStyle,
+                borderRadius: '6px',
+                textAlign: 'center',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 3px 12px rgba(0,0,0,0.6)',
+                border: '2px solid rgba(255,255,255,0.3)',
+                pointerEvents: 'none',
+                userSelect: 'none',
+              }}
+            >
+              {label.name}
+            </div>
+          </Popup>
+        </CircleMarker>
+      ))}
+    </>
+  );
 }
 
 // Location name display component - wrapper that uses useMap hook
@@ -527,6 +697,7 @@ function MapComponent({ selectedPos, setSelectedPos, onAnalyze, isLoading, onLoc
         
         <MapController />
         <MapCenterTracker onCenterChange={handleMapCenterChange} />
+        <SemanticZoomLabels />
         
         <MapClickHandler 
           setSelectedPos={setSelectedPos}

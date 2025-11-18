@@ -209,3 +209,28 @@ body {
   background-clip: text;
   filter: brightness(1.2);
 }
+
+/* Semantic Zoom Labels - Always visible, no pointer events */
+.semantic-zoom-label .leaflet-popup-content-wrapper {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  pointer-events: none !important;
+  max-width: none !important;
+}
+
+.semantic-zoom-label .leaflet-popup-content {
+  margin: 0 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+}
+
+.semantic-zoom-label .leaflet-popup-tip-container {
+  display: none !important;
+}
+
+.semantic-zoom-label {
+  pointer-events: none !important;
+}
