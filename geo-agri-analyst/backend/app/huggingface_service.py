@@ -8,7 +8,7 @@ import base64
 import io
 from PIL import Image
 import numpy as np
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Tuple
 import asyncio
 import os
 import tempfile
@@ -279,6 +279,55 @@ class HuggingFaceModelService:
             print(f"📋 Full error details: {type(e).__name__}")
             print("💡 Try again - the first request may wake up a sleeping Space")
             return self._get_fallback_prediction(lat, lng, image)
+    
+    async def predict_batch(
+        self,
+        coordinates: List[Tuple[float, float]],
+        zoom: int = 17,
+        progress_callback: Optional[callable] = None
+    ) -> List[Dict]:
+        """
+        Get land classification predictions for multiple coordinate points
+        
+        Args:
+            coordinates: List of (lat, lng) tuples
+            zoom: Zoom level for satellite images
+            progress_callback: Optional callback function for progress updates
+            
+        Returns:
+            List of prediction dicts, one for each coordinate
+        """
+        predictions = []
+        total = len(coordinates)
+        
+        print(f"🔄 Processing batch of {total} locations...")
+        
+        for idx, (lat, lng) in enumerate(coordinates):
+            try:
+                # Fetch satellite image with specified zoom
+                satellite_svc = get_satellite_service()
+                image = satellite_svc.get_satellite_image(lat, lng, size=30, zoom=zoom)
+                
+                # Get prediction for this location
+                pred = await self.predict(lat, lng, image=image)
+                pred['coordinates'] = {'lat': lat, 'lng': lng}
+                predictions.append(pred)
+                
+                # Progress update
+                if progress_callback:
+                    progress_callback(idx + 1, total)
+                
+                if (idx + 1) % 5 == 0 or idx == total - 1:
+                    print(f"   Processed {idx + 1}/{total} locations")
+                    
+            except Exception as e:
+                print(f"⚠️ Error processing location ({lat}, {lng}): {e}")
+                # Add fallback prediction for failed location
+                predictions.append(self._get_fallback_prediction(lat, lng))
+                predictions[-1]['coordinates'] = {'lat': lat, 'lng': lng}
+        
+        print(f"✅ Batch processing complete: {len(predictions)}/{total} predictions")
+        return predictions
     
     def _get_fallback_prediction(
         self, 

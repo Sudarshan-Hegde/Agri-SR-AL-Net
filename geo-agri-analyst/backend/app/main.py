@@ -13,6 +13,14 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 # Relative imports for package structure
 from app.weather_service import get_agricultural_climate_summary
 from app.huggingface_service import get_hf_service
+from app.crop_history_service import get_crop_history_service
+from app.crop_suggestion_service import get_crop_suggestion_service
+from app.polygon_utils import (
+    generate_grid_samples,
+    estimate_polygon_area_km2,
+    determine_optimal_zoom,
+    aggregate_predictions
+)
 
 app = FastAPI(title="Geo-Agri Analyst API", version="1.0.0")
 
@@ -197,11 +205,93 @@ async def get_weather_data(coords: Coords):
             "coordinates": {"lat": coords.lat, "lng": coords.lng}
         }
 
+@app.post("/api/v1/crop-history")
+async def get_crop_history_data(coords: Coords):
+    """
+    Dedicated endpoint for fetching historical crop and land use data.
+    
+    Args:
+        coords: Coordinates object with lat and lng
+        
+    Returns:
+        Historical crop data including NDVI trends, seasonal patterns, and land use analysis
+    """
+    try:
+        crop_history_service = get_crop_history_service()
+        history_data = await crop_history_service.get_crop_history(coords.lat, coords.lng, years=5)
+        
+        if history_data:
+            return {
+                "status": "success",
+                "coordinates": {"lat": coords.lat, "lng": coords.lng},
+                "data": history_data
+            }
+        else:
+            return {
+                "status": "error",
+                "message": "Unable to fetch crop history for the specified coordinates",
+                "coordinates": {"lat": coords.lat, "lng": coords.lng}
+            }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Crop history service error: {str(e)}",
+            "coordinates": {"lat": coords.lat, "lng": coords.lng}
+        }
+
+class CropSuggestionRequest(BaseModel):
+    lat: float
+    lng: float
+    land_class: str
+    weather_data: Optional[dict] = None
+    crop_history: Optional[dict] = None
+    farm_size_hectares: float = 1.0
+    risk_tolerance: str = "medium"  # low, medium, high
+
+@app.post("/api/v1/crop-suggestions")
+async def get_crop_suggestions_endpoint(request: CropSuggestionRequest):
+    """
+    Get profit-optimized crop suggestions based on location and conditions.
+    
+    Args:
+        request: CropSuggestionRequest with location, land class, and preferences
+        
+    Returns:
+        Ranked list of crop suggestions with profitability analysis
+    """
+    try:
+        crop_service = get_crop_suggestion_service()
+        suggestions = await crop_service.get_crop_suggestions(
+            lat=request.lat,
+            lng=request.lng,
+            land_class=request.land_class,
+            weather_data=request.weather_data,
+            crop_history=request.crop_history,
+            farm_size_hectares=request.farm_size_hectares,
+            risk_tolerance=request.risk_tolerance
+        )
+        
+        if suggestions:
+            return {
+                "status": "success",
+                "data": suggestions
+            }
+        else:
+            return {
+                "status": "error",
+                "message": "Unable to generate crop suggestions"
+            }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Crop suggestion service error: {str(e)}"
+        }
+
 @app.post("/api/v1/analyze")
 async def analyze_location(request: Union[Coords, AnalysisRequest]):
     """
     Enhanced analysis endpoint that combines satellite image analysis with weather/climate data.
-    Supports both point and polygon analysis.
+    Supports both point and polygon analysis with multi-image sampling for polygons.
     
     Args:
         request: Either Coords (for backward compatibility) or AnalysisRequest
@@ -237,58 +327,196 @@ async def analyze_location(request: Union[Coords, AnalysisRequest]):
         points = None
         print(f"Received point analysis at: {lat}, {lng}")
     
-    # Get real ML predictions from HuggingFace Space
     hf_service = get_hf_service()
-    ml_results = await hf_service.predict(lat, lng)
     
-    # Extract results
-    selected_class = ml_results.get("land_class", "Unknown")
-    confidence = ml_results.get("confidence", 0.0)
-    before_img_b64 = ml_results.get("before_image_b64", IMG_LR_B64)
-    after_img_b64 = ml_results.get("after_image_b64", IMG_SR_B64)
-    top_predictions = ml_results.get("predictions", {})
-    
-    # Fetch real weather/climate data
-    weather_data = None
-    try:
-        print(f"Fetching weather data for coordinates: {lat}, {lng}")
-        weather_data = await get_agricultural_climate_summary(lat, lng)
-        if weather_data:
-            print("Successfully retrieved weather data")
-        else:
-            print("No weather data returned")
-    except Exception as e:
-        print(f"Error fetching weather data: {str(e)}")
-        # Weather data is optional, continue with analysis even if it fails
-    
-    # Additional info for polygon analysis
-    area_info = None
-    if analysis_type == "polygon" and points:
-        # Calculate accurate area and perimeter
+    # For polygon analysis, use multi-image sampling
+    if analysis_type == "polygon" and points and len(points) >= 3:
+        print("🔄 Starting multi-image polygon analysis...")
+        
+        # Calculate polygon area
+        area_km2 = estimate_polygon_area_km2(points)
+        print(f"📏 Polygon area: {area_km2:.4f} km²")
+        
+        # Determine optimal zoom level based on area
+        optimal_zoom = determine_optimal_zoom(area_km2, is_polygon=True)
+        print(f"🔍 Using zoom level {optimal_zoom} for polygon analysis")
+        
+        # Generate grid sample points
+        sample_coords = generate_grid_samples(points, max_samples=50, min_samples=5)
+        print(f"📍 Generated {len(sample_coords)} sample points across polygon")
+        
+        # Get predictions for all sample points
+        batch_predictions = await hf_service.predict_batch(sample_coords, zoom=optimal_zoom)
+        
+        # Aggregate predictions
+        aggregated = aggregate_predictions(batch_predictions)
+        
+        # Use first sample's images for display (representative)
+        before_img_b64 = batch_predictions[0].get("before_image_b64", IMG_LR_B64) if batch_predictions else IMG_LR_B64
+        after_img_b64 = batch_predictions[0].get("after_image_b64", IMG_SR_B64) if batch_predictions else IMG_SR_B64
+        
+        # Build comprehensive area info
         area_hectares = calculate_polygon_area(points)
         perimeter_km = calculate_polygon_perimeter(points)
         
         area_info = {
             "total_points": len(points),
             "estimated_area_hectares": area_hectares,
+            "estimated_area_km2": area_km2,
             "perimeter_km": perimeter_km,
-            "dominant_land_type": selected_class,
-            "centroid_coordinates": {"lat": lat, "lng": lng}
+            "dominant_land_type": aggregated["dominant_class"],
+            "centroid_coordinates": {"lat": lat, "lng": lng},
+            "sample_count": aggregated["sample_count"],
+            "zoom_level_used": optimal_zoom,
+            "class_distribution": aggregated["class_distribution"]
         }
-    
-    # Combine results
-    result = {
-        "land_class": selected_class,
-        "confidence": confidence,
-        "before_image_b64": before_img_b64,
-        "after_image_b64": after_img_b64,
-        "top_predictions": top_predictions,  # Top 5 predictions from model
-        "analysis_type": analysis_type,
-        "coordinates": {"lat": lat, "lng": lng},
-        "area_info": area_info,
-        "weather_data": weather_data,  # Include weather data in response
-        "ml_source": ml_results.get("source", "unknown")  # Track if using HF or fallback
-    }
+        
+        # Fetch weather data for centroid
+        weather_data = None
+        try:
+            print(f"Fetching weather data for centroid: {lat}, {lng}")
+            weather_data = await get_agricultural_climate_summary(lat, lng)
+        except Exception as e:
+            print(f"Error fetching weather data: {str(e)}")
+        
+        # Fetch crop history for centroid
+        crop_history = None
+        try:
+            print(f"Fetching crop history for centroid: {lat}, {lng}")
+            crop_history_service = get_crop_history_service()
+            crop_history = await crop_history_service.get_crop_history(lat, lng, years=5)
+            print("✅ Successfully retrieved crop history")
+        except Exception as e:
+            print(f"Error fetching crop history: {str(e)}")
+        
+        # Fetch crop suggestions for polygon
+        crop_suggestions = None
+        try:
+            print(f"Generating crop suggestions for polygon...")
+            crop_service = get_crop_suggestion_service()
+            crop_suggestions = await crop_service.get_crop_suggestions(
+                lat=lat,
+                lng=lng,
+                land_class=aggregated["dominant_class"],
+                weather_data=weather_data,
+                crop_history=crop_history,
+                farm_size_hectares=area_hectares,
+                risk_tolerance="medium"
+            )
+            print("✅ Successfully generated crop suggestions")
+        except Exception as e:
+            print(f"Error generating crop suggestions: {str(e)}")
+        
+        # Combine results
+        result = {
+            "land_class": aggregated["dominant_class"],
+            "confidence": aggregated["confidence"],
+            "before_image_b64": before_img_b64,
+            "after_image_b64": after_img_b64,
+            "top_predictions": dict(list(aggregated["class_distribution"].items())[:5]),
+            "analysis_type": "polygon",
+            "coordinates": {"lat": lat, "lng": lng},
+            "area_info": area_info,
+            "weather_data": weather_data,
+            "crop_history": crop_history,
+            "crop_suggestions": crop_suggestions,
+            "ml_source": "multi-sample-aggregated",
+            "detailed_samples": batch_predictions[:10]  # Include first 10 detailed samples
+        }
+        
+        print(f"✅ Polygon analysis complete: {aggregated['dominant_class']} ({aggregated['confidence']:.2%} confidence)")
+        
+    else:
+        # Single point analysis
+        print(f"🔄 Starting single-point analysis at ({lat}, {lng})")
+        
+        # Use lower zoom for single point to capture more context
+        point_zoom = determine_optimal_zoom(0, is_polygon=False)
+        print(f"🔍 Using zoom level {point_zoom} for point analysis")
+        
+        # Get prediction with custom zoom
+        from app.satellite_service import get_satellite_service
+        satellite_svc = get_satellite_service()
+        image = satellite_svc.get_satellite_image(lat, lng, size=30, zoom=point_zoom)
+        
+        ml_results = await hf_service.predict(lat, lng, image=image)
+        
+        # Extract results
+        selected_class = ml_results.get("land_class", "Unknown")
+        confidence = ml_results.get("confidence", 0.0)
+        before_img_b64 = ml_results.get("before_image_b64", IMG_LR_B64)
+        after_img_b64 = ml_results.get("after_image_b64", IMG_SR_B64)
+        top_predictions = ml_results.get("predictions", {})
+        
+        # Fetch weather data
+        weather_data = None
+        try:
+            print(f"Fetching weather data for coordinates: {lat}, {lng}")
+            weather_data = await get_agricultural_climate_summary(lat, lng)
+        except Exception as e:
+            print(f"Error fetching weather data: {str(e)}")
+        
+        # Fetch crop history
+        crop_history = None
+        try:
+            print(f"Fetching crop history for coordinates: {lat}, {lng}")
+            crop_history_service = get_crop_history_service()
+            crop_history = await crop_history_service.get_crop_history(lat, lng, years=5)
+            print("✅ Successfully retrieved crop history")
+        except Exception as e:
+            print(f"Error fetching crop history: {str(e)}")
+        
+        # Fetch crop suggestions for point analysis
+        crop_suggestions = None
+        try:
+            print(f"Generating crop suggestions for point...")
+            crop_service = get_crop_suggestion_service()
+            crop_suggestions = await crop_service.get_crop_suggestions(
+                lat=lat,
+                lng=lng,
+                land_class=selected_class,
+                weather_data=weather_data,
+                crop_history=crop_history,
+                farm_size_hectares=1.0,  # Default 1 hectare for point analysis
+                risk_tolerance="medium"
+            )
+            print("✅ Successfully generated crop suggestions")
+        except Exception as e:
+            print(f"Error generating crop suggestions: {str(e)}")
+        
+        area_info = None
+        if analysis_type == "polygon" and points:
+            # Single point polygon (too small for multi-sampling)
+            area_hectares = calculate_polygon_area(points)
+            perimeter_km = calculate_polygon_perimeter(points)
+            
+            area_info = {
+                "total_points": len(points),
+                "estimated_area_hectares": area_hectares,
+                "perimeter_km": perimeter_km,
+                "dominant_land_type": selected_class,
+                "centroid_coordinates": {"lat": lat, "lng": lng},
+                "note": "Polygon too small for multi-sampling, using centroid analysis"
+            }
+        
+        # Combine results
+        result = {
+            "land_class": selected_class,
+            "confidence": confidence,
+            "before_image_b64": before_img_b64,
+            "after_image_b64": after_img_b64,
+            "top_predictions": top_predictions,
+            "analysis_type": analysis_type,
+            "coordinates": {"lat": lat, "lng": lng},
+            "area_info": area_info,
+            "weather_data": weather_data,
+            "crop_history": crop_history,
+            "crop_suggestions": crop_suggestions,
+            "ml_source": ml_results.get("source", "unknown"),
+            "zoom_level_used": point_zoom
+        }
+        
+        print(f"✅ Point analysis complete: {selected_class} ({confidence:.2%} confidence)")
     
     return result
 
