@@ -36,9 +36,15 @@ function formatAnalysisResult(result) {
   if (!result) return [{ title: 'Status', value: 'No results available' }]
 
   const formattedResults = []
+  
+  // Fields to exclude from display (already shown in image section)
+  const excludeFields = ['before_image_b64', 'after_image_b64']
 
   // Convert all result properties into readable format
   Object.entries(result).forEach(([key, value]) => {
+    // Skip image fields
+    if (excludeFields.includes(key)) return
+    
     if (typeof value === 'object' && value !== null) {
       // Handle nested objects
       Object.entries(value).forEach(([nestedKey, nestedValue]) => {
@@ -142,10 +148,10 @@ function AnalyticsPage({ history, settings }) {
                       {/* Before Image */}
                       <div className="space-y-2">
                         <div className="text-sm text-gray-400">Original Image</div>
-                        {analysis.results?.before_image ? (
+                        {analysis.results?.before_image_b64 ? (
                           <div className="glass p-2 rounded-lg overflow-hidden">
                             <img 
-                              src={`data:image/jpeg;base64,${analysis.results.before_image}`}
+                              src={`data:image/jpeg;base64,${analysis.results.before_image_b64}`}
                               alt="Original satellite image"
                               className="w-full h-48 object-cover rounded-lg"
                             />
@@ -160,10 +166,10 @@ function AnalyticsPage({ history, settings }) {
                       {/* After Image */}
                       <div className="space-y-2">
                         <div className="text-sm text-gray-400">Enhanced Image</div>
-                        {analysis.results?.after_image ? (
+                        {analysis.results?.after_image_b64 ? (
                           <div className="glass p-2 rounded-lg overflow-hidden">
                             <img 
-                              src={`data:image/jpeg;base64,${analysis.results.after_image}`}
+                              src={`data:image/jpeg;base64,${analysis.results.after_image_b64}`}
                               alt="Enhanced satellite image"
                               className="w-full h-48 object-cover rounded-lg"
                             />
