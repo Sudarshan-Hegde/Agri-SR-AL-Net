@@ -183,6 +183,156 @@ function AnalyticsPage({ history, settings }) {
                     </div>
                   </div>
 
+                  {/* Crop History Section */}
+                  {analysis.results?.crop_history && (
+                    <div className="glass rounded-xl p-5 space-y-4 border border-purple-500/30">
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-lg">📊</span>
+                        </div>
+                        <h4 className="text-lg font-medium text-purple-300">Crop History Analysis</h4>
+                      </div>
+
+                      {/* Historical Summary */}
+                      {analysis.results.crop_history.historical_summary && (
+                        <div className="glass rounded-lg p-4 border border-purple-500/20">
+                          <h5 className="text-sm font-medium text-purple-400 mb-2">Historical Summary</h5>
+                          <p className="text-white text-sm mb-3">
+                            {analysis.results.crop_history.historical_summary.interpretation || 
+                             analysis.results.crop_history.historical_summary.summary}
+                          </p>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+                            {analysis.results.crop_history.historical_summary.average_vegetation_index && (
+                              <div className="glass rounded p-2">
+                                <div className="text-xs text-gray-400">Avg Vegetation</div>
+                                <div className="text-emerald-400 font-semibold">
+                                  {(analysis.results.crop_history.historical_summary.average_vegetation_index * 100).toFixed(0)}%
+                                </div>
+                              </div>
+                            )}
+                            {analysis.results.crop_history.historical_summary.most_productive_year && (
+                              <div className="glass rounded p-2">
+                                <div className="text-xs text-gray-400">Most Productive</div>
+                                <div className="text-yellow-400 font-semibold">
+                                  {analysis.results.crop_history.historical_summary.most_productive_year}
+                                </div>
+                              </div>
+                            )}
+                            {analysis.results.crop_history.historical_summary.trend && (
+                              <div className="glass rounded p-2">
+                                <div className="text-xs text-gray-400">Trend</div>
+                                <div className="text-blue-400 font-semibold text-xs">
+                                  {analysis.results.crop_history.historical_summary.trend}
+                                </div>
+                              </div>
+                            )}
+                            {analysis.results.crop_history.historical_summary.climate_zone && (
+                              <div className="glass rounded p-2">
+                                <div className="text-xs text-gray-400">Climate Zone</div>
+                                <div className="text-cyan-400 font-semibold">
+                                  {analysis.results.crop_history.historical_summary.climate_zone}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Yearly History */}
+                      {analysis.results.crop_history.ndvi_history && analysis.results.crop_history.ndvi_history.length > 0 && (
+                        <div className="glass rounded-lg p-4">
+                          <h5 className="text-sm font-medium text-purple-400 mb-3">
+                            Yearly Vegetation Health ({analysis.results.crop_history.years_analyzed} Years)
+                          </h5>
+                          <div className="space-y-2">
+                            {analysis.results.crop_history.ndvi_history.map((yearData) => (
+                              <div key={yearData.year} className="glass rounded-lg p-3">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div>
+                                    <span className="text-white font-semibold">{yearData.year}</span>
+                                    <span className="text-gray-400 text-sm ml-2">
+                                      {yearData.crop_activity}
+                                    </span>
+                                  </div>
+                                  <span className="text-emerald-400 font-bold">
+                                    {Math.round(yearData.vegetation_index * 100)}%
+                                  </span>
+                                </div>
+                                
+                                {/* Vegetation Index Bar */}
+                                <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden mb-2">
+                                  <div 
+                                    className="h-full bg-gradient-to-r from-yellow-500 via-green-500 to-emerald-500 transition-all"
+                                    style={{ width: `${yearData.vegetation_index * 100}%` }}
+                                  ></div>
+                                </div>
+                                
+                                {/* Additional Metrics */}
+                                <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
+                                  <div>
+                                    <span className="text-gray-500">Precip:</span>
+                                    <span className="text-blue-400 ml-1">
+                                      {yearData.avg_precipitation_mm?.toFixed(0)} mm
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500">Temp:</span>
+                                    <span className="text-orange-400 ml-1">
+                                      {yearData.avg_temperature_c?.toFixed(1)}°C
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500">Season:</span>
+                                    <span className="text-purple-400 ml-1">
+                                      {yearData.growing_season_quality}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Seasonal Patterns */}
+                      {analysis.results.crop_history.seasonal_patterns && (
+                        <div className="glass rounded-lg p-4">
+                          <h5 className="text-sm font-medium text-purple-400 mb-3">Seasonal Patterns</h5>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="glass rounded p-3">
+                              <div className="text-xs text-gray-400 mb-1">Hemisphere</div>
+                              <div className="text-white font-medium">
+                                {analysis.results.crop_history.seasonal_patterns.hemisphere}
+                              </div>
+                            </div>
+                            <div className="glass rounded p-3">
+                              <div className="text-xs text-gray-400 mb-1">Cropping Pattern</div>
+                              <div className="text-white font-medium">
+                                {analysis.results.crop_history.seasonal_patterns.cropping_pattern}
+                              </div>
+                            </div>
+                            {analysis.results.crop_history.seasonal_patterns.typical_growing_season && (
+                              <div className="glass rounded p-3 md:col-span-2">
+                                <div className="text-xs text-gray-400 mb-1">Typical Growing Season</div>
+                                <div className="text-emerald-400 text-sm">
+                                  {analysis.results.crop_history.seasonal_patterns.typical_growing_season.join(', ')}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Data Source */}
+                      <div className="glass rounded-lg p-3 text-xs text-gray-400">
+                        <span>Data Source: {analysis.results.crop_history.data_source}</span>
+                        {analysis.results.crop_history.last_updated && (
+                          <span className="ml-2">• Updated: {new Date(analysis.results.crop_history.last_updated).toLocaleDateString()}</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Analysis Results Section */}
                   <div className="glass rounded-xl p-5 space-y-4">
                     <h4 className="text-lg font-medium text-white mb-4">Analysis Results</h4>
